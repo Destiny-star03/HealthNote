@@ -14,6 +14,22 @@ export default function App() {
 
   const [editingBody, setEditingBody] = useState(null);
 
+  const handleSaveGoals = (newGoals) => {
+    const cleanGoals = {
+      weight:
+        newGoals.weight !== undefined && newGoals.weight !== null
+          ? Number(newGoals.weight)
+          : null,
+      muscle:
+        newGoals.muscle !== undefined && newGoals.muscle !== null
+          ? Number(newGoals.muscle)
+          : null,
+    };
+
+    setGoals(cleanGoals);
+    localStorage.setItem("goals", JSON.stringify(cleanGoals));
+  };
+
   useEffect(() => {
     const body = JSON.parse(localStorage.getItem("bodyRecords")) || [];
     const exercise =
@@ -82,13 +98,15 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-10">
+      <main className="max-w-7xl mx-auto px-4 py-6 space-y-10">
         {/* 0. 상단 “나의 활동” 대시보드 */}
         <Dashboard
           bodyRecords={bodyRecords}
           exerciseRecords={exerciseRecords}
           goals={goals}
+          onSaveGoals={handleSaveGoals}
         />
+
 
         {/* 1. 체성분 기록 관리 */}
         <section className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 space-y-4">
