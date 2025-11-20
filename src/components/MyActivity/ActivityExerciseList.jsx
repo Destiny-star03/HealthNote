@@ -1,39 +1,196 @@
 // src/components/MyActivity/ActivityExerciseList.jsx
+import { useMemo, useState, useEffect, useRef } from "react";
+
 export default function ActivityExerciseList({ exercises }) {
-  if (!exercises || exercises.length === 0)
-    return (
-      <div className="bg-white p-5 rounded-xl shadow text-center text-gray-500">
-        운동 기록이 없습니다.
-      </div>
-    );
+  const safeExercises = exercises || [];
+  const hasData = safeExercises.length > 0;
 
-  const recent = [...exercises]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 5);
+  // 1️⃣ 날짜 목록 + 최신 날짜
+  const sortedDates = useMemo(() => {
+    if (!hasData) return [];
+    const dates = Array.from(new Set(safeExercises.map((e) => e.date)));
+    return dates.sort((a, b) => new Date(b) - new Date(a)); // 최신 날짜 우선
+  }, [safeExercises, hasData]);
 
+  const [selectedDate, setSelectedDate] = useState(() => sortedDates[0] ?? "");
+  const [open, setOpen] = useState(false); // 드롭다운 열림/닫힘 상태
+  const dropdownRef = useRef(null);
+
+  // 날짜 목록이 바뀌면 자동으로 최신 날짜 선택
+  useEffect(() => {
+    if (sortedDates.length > 0) {
+      setSelectedDate(sortedDates[0]);
+    } else {
+      setSelectedDate("");
+    }
+  }, [sortedDates]);
+
+  // 2️⃣ 선택된 날짜의 운동만 필터링
+  const dailyExercises = useMemo(() => {
+    if (!selectedDate) return [];
+    return safeExercises.filter((e) => e.date === selectedDate);
+  }, [safeExercises, selectedDate]);
+
+  // 3️⃣ 바깥 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // ---------- 렌더링 ----------
   return (
-    <div className="bg-white p-6 rounded-xl shadow">
-      <h3 className="text-lg font-semibold text-gray-700 mb-4">🗓️ 최근 운동 기록</h3>
-      <table className="w-full text-center border border-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="p-2 border">날짜</th>
-            <th className="p-2 border">운동명</th>
-            <th className="p-2 border">시간(분)</th>
-            <th className="p-2 border">칼로리(kcal)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recent.map((ex) => (
-            <tr key={ex.id} className="hover:bg-gray-50">
-              <td className="border p-2">{ex.date}</td>
-              <td className="border p-2">{ex.exercise}</td>
-              <td className="border p-2">{ex.duration}</td>
-              <td className="border p-2 text-blue-600 font-semibold">{ex.calories}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <section className="bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
+      <div className="bg-white rounded-3xl border border-sky-100 px-5 py-4 sm:px-8 sm:py-6 shadow-sm">
+        {/* 상단 타이틀 + 날짜 선택 */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-800">
+            최근 운동기록
+          </h2>
+
+          {hasData && (
+            <div
+              ref={dropdownRef}
+              className="relative text-xs sm:text-sm"
+            >
+              <span className="mr-2 text-slate-500">날짜 선택</span>
+              {/* 드롭다운 버튼 */}
+              <button
+                type="button"
+                onClick={() => setOpen((prev) => !prev)}
+                className={`
+                  inline-flex items-center justify-between
+                  px-3 py-1.5
+                  rounded-full
+                  border ${open ? "border-sky-400" : "border-sky-300"}
+                  bg-white
+                  text-sky-600
+                  shadow-sm
+                  focus:outline-none focus:ring-2 focus:ring-sky-300
+                  transition
+                  min-w-[120px]
+                `}
+              >
+                <span className="mr-2">{selectedDate}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={`h-3 w-3 text-sky-400 transition-transform ${
+                    open ? "rotate-180" : ""
+                  }`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              {/* 펼쳐지는 리스트 */}
+              {open && (
+                <div
+                  className="
+                    absolute right-0 mt-2
+                    w-40
+                    bg-white
+                    rounded-2xl
+                    border border-sky-100
+                    shadow-lg
+                    py-1
+                    z-20
+                  "
+                >
+                  {sortedDates.map((d) => {
+                    const active = d === selectedDate;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDate(d);
+                          setOpen(false);
+                        }}
+                        className={`
+                          w-full text-left px-3 py-2 text-xs
+                          ${active
+                            ? "bg-sky-50 text-sky-600 font-semibold"
+                            : "text-slate-600 hover:bg-sky-50"}
+                        `}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 데이터 없을 때 */}
+        {!hasData && (
+          <div className="text-center text-sm text-slate-500 py-6">
+            아직 운동 기록이 없습니다. 아래에서 운동을 기록해 보세요.
+          </div>
+        )}
+
+        {/* 선택된 날짜에 운동이 없을 때 */}
+        {hasData && dailyExercises.length === 0 && (
+          <div className="text-center text-sm text-slate-500 py-6">
+            선택한 날짜({selectedDate})에는 운동 기록이 없습니다.
+          </div>
+        )}
+
+        {/* 선택된 날짜의 운동 리스트 */}
+        {hasData && dailyExercises.length > 0 && (
+          <ul className="space-y-3">
+            {dailyExercises.map((ex) => (
+              <li
+                key={ex.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 bg-sky-50 rounded-2xl shadow-inner"
+              >
+                {/* 왼쪽: 운동명 + 시간/칼로리 */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sky-500 text-lg">🏋️</span>
+                    <span className="font-semibold text-slate-800 text-sm sm:text-base">
+                      {ex.exercise}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs sm:text-sm text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <span className="text-sky-500 text-sm">⏱️</span>
+                      {ex.duration}분
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="text-orange-400 text-sm">🔥</span>
+                      {ex.calories}kcal
+                    </span>
+                  </div>
+                </div>
+
+                {/* 오른쪽: 날짜 */}
+                <div className="flex items-center gap-1 text-xs sm:text-sm text-sky-500">
+                  <span className="text-base">📅</span>
+                  <span className="font-medium">{ex.date}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }
