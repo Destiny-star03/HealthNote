@@ -1,178 +1,244 @@
 // src/components/MyActivity/ActivityChart.jsx
-import { useMemo, useState } from "react";
 import {
-  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
+  CartesianGrid,
+  ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
+import { useMemo, useState, useEffect } from "react";
 
-const TABS = [
-  { id: "all", label: "전체" },
-  { id: "weight", label: "체중" },
-  { id: "muscle", label: "근육량" },
-  { id: "fat", label: "체지방(%)" },
-];
+const METRICS = {
+  weight: { key: "weight", label: "체중 (kg)", unit: "kg" },
+  muscle: { key: "muscle", label: "골격근량 (kg)", unit: "kg" },
+  fat: { key: "fat", label: "체지방률 (%)", unit: "%" },
+};
 
 export default function ActivityChart({ bodyRecords }) {
-  const [filter, setFilter] = useState("all");
-
-  // 날짜 오름차순 정렬 + 그래프용 데이터 변환
-  const data = useMemo(() => {
-    if (!bodyRecords || bodyRecords.length === 0) return [];
-    const sorted = [...bodyRecords].sort(
-      (a, b) => new Date(a.date) - new Date(b.date)
-    );
-    return sorted.map((r) => ({
-      date: r.date.slice(5), // "11-20" 형식
-      weight: Number(r.weight),
-      muscle: Number(r.muscle),
-      fat: Number(r.fat), // 이미 % 값이라고 가정
-    }));
-  }, [bodyRecords]);
-
-  // Y축 최대값 계산
-  const yMax = useMemo(() => {
-    if (!data.length) return 0;
-    const keys =
-      filter === "all"
-        ? ["weight", "muscle", "fat"]
-        : filter === "weight"
-        ? ["weight"]
-        : filter === "muscle"
-        ? ["muscle"]
-        : ["fat"];
-
-    let max = 0;
-    for (const row of data) {
-      for (const key of keys) {
-        if (!isNaN(row[key])) {
-          max = Math.max(max, row[key]);
-        }
-      }
-    }
-    return max || 0;
-  }, [data, filter]);
-
-  if (!data.length) {
+  if (!bodyRecords || bodyRecords.length === 0) {
     return (
-      <section className="bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
-        <div className="bg-white rounded-3xl border border-sky-100 px-5 py-6 text-center text-sm text-slate-500">
-          체성분 기록이 아직 없어서 그래프를 표시할 수 없습니다.
-        </div>
+      <section className="w-full bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm text-center text-sm text-slate-500">
+        아직 체성분 기록이 없습니다. 아래에서 기록을 추가하면 그래프가 나타납니다.
       </section>
     );
   }
 
+  // 날짜순 정렬
+  const sortedData = useMemo(
+    () => [...bodyRecords].sort((a, b) => (a.date > b.date ? 1 : -1)),
+    [bodyRecords]
+  );
+
+  const latestRecord = sortedData[sortedData.length - 1];
+
+  // 그래프에서 선택된 지점 (기본: 가장 최근 값)
+  const [activeRecord, setActiveRecord] = useState(latestRecord);
+
+  // 어떤 항목의 그래프를 볼지 (체중 / 근육량 / 체지방률)
+  const [selectedMetric, setSelectedMetric] = useState("weight");
+
+  useEffect(() => {
+    setActiveRecord(latestRecord);
+  }, [latestRecord]);
+
+  const formatNumber = (value, digits = 1) => {
+    if (value === null || value === undefined || isNaN(value)) return "-";
+    return Number(value).toFixed(digits);
+  };
+
+  // 🔹 지금 화면에 보여줄 기준 레코드
+  //    - 기본: 가장 최근 값
+  //    - 그래프/날짜 클릭 후: activeRecord
+  const currentRecord = activeRecord ?? latestRecord;
+
+  // 🔹 그래프 영역 클릭 시: 점 또는 해당 날짜 라인을 클릭하면 그 날짜 데이터 선택
+  const handleChartClick = (state) => {
+    if (!state) return;
+
+    const payload = state.activePayload?.[0]?.payload;
+    const label = state.activeLabel;
+
+    let record = null;
+
+    if (payload) {
+      record = payload;
+    } else if (label != null) {
+      record = sortedData.find((d) => d.date === label) ?? null;
+    }
+
+    if (record) {
+      setActiveRecord(record);
+    }
+  };
+
+  const metric = METRICS[selectedMetric];
+  const activeValue = currentRecord ? currentRecord[metric.key] : null;
+
+  // 🔹 선택된 metric 기준으로 Y축 최소/최대값 계산
+  const { minY, maxY } = useMemo(() => {
+    const key = metric.key;
+
+    const values = sortedData
+      .map((d) => Number(d[key]))
+      .filter((v) => !isNaN(v));
+
+    if (values.length === 0) {
+      return { minY: 0, maxY: 10 }; // 안전한 기본값
+    }
+
+    const rawMin = Math.min(...values);
+    const rawMax = Math.max(...values);
+
+    const padding = 3; // 여유값
+
+    // 최소값은 0 아래로 내려가지 않게 (특히 체지방률 %)
+    const minY = Math.max(0, rawMin - padding);
+    const maxY = rawMax + padding;
+
+    return { minY, maxY };
+  }, [sortedData, metric]);
+
   return (
-    <section className="bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
-      <div className="bg-white rounded-3xl border border-sky-100 px-5 py-4 sm:px-8 sm:py-6 shadow-sm">
-        {/* 상단 제목 + 탭 */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+    <section className="w-full bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
+      <div className="bg-white rounded-3xl border border-sky-100 px-4 sm:px-6 py-4 sm:py-5 shadow-sm">
+        {/* 제목 + 선택된 측정값 */}
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-base sm:text-lg font-semibold text-slate-800">
             체성분 변화 추이
           </h2>
-          <div className="flex gap-2 text-xs sm:text-sm">
-            {TABS.map((tab) => {
-              const active = filter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setFilter(tab.id)}
-                  className={[
-                    "px-3 py-1.5 rounded-full border transition-all",
-                    active
-                      ? "bg-sky-500 text-white border-sky-500 shadow-sm"
-                      : "bg-white text-sky-500 border-sky-200 hover:bg-sky-50",
-                  ].join(" ")}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          <p className="text-xs sm:text-sm text-slate-400 text-right">
+            선택된 측정:{" "}
+            <span className="font-medium text-sky-600">
+              {currentRecord?.date ?? "-"}
+            </span>
+            {currentRecord && (
+              <>
+                {"  •  "}
+                <span className="font-semibold text-slate-800">
+                  {formatNumber(activeValue, 1)}
+                  {metric.unit}
+                </span>
+              </>
+            )}
+          </p>
         </div>
 
-        {/* 라인 차트 */}
-        <div className="h-64">
+        {/* 🔹 카드 3개: 클릭도 가능 + 숫자는 currentRecord 기준으로 변경 */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <MetricCard
+            label="체중 (kg)"
+            value={formatNumber(currentRecord?.weight, 1)}
+            unit="kg"
+            active={selectedMetric === "weight"}
+            onClick={() => setSelectedMetric("weight")}
+          />
+          <MetricCard
+            label="골격근량 (kg)"
+            value={formatNumber(currentRecord?.muscle, 1)}
+            unit="kg"
+            active={selectedMetric === "muscle"}
+            onClick={() => setSelectedMetric("muscle")}
+          />
+          <MetricCard
+            label="체지방률 (%)"
+            value={formatNumber(currentRecord?.fat, 1)}
+            unit="%"
+            active={selectedMetric === "fat"}
+            onClick={() => setSelectedMetric("fat")}
+          />
+        </div>
+
+        {/* 🔹 라인 차트 */}
+        <div className="w-full h-64 sm:h-72 chart-container">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={data}
-              margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+              data={sortedData}
+              margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
+              onClick={handleChartClick}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(148, 163, 184, 0.2)"
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: "#6B7280" }}
                 tickMargin={8}
+
               />
               <YAxis
-                domain={[0, yMax ? Math.ceil(yMax * 1.1) : "auto"]}
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: "#6B7280" }}
+                tickMargin={8}
+                domain={[minY, maxY]} // ⬅️ 최소/최대 적용
               />
               <Tooltip
-                contentStyle={{
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(148, 163, 184, 0.3)",
-                  fontSize: 12,
+                formatter={(value) =>
+                  `${formatNumber(value, 1)}${metric.unit}`
+                }
+                labelFormatter={(label) => `날짜: ${label}`}
+              />
+
+              {/* 선택된 날짜 기준 세로 점선 */}
+              {currentRecord && (
+                <ReferenceLine
+                  x={currentRecord.date}
+                  stroke="#9CA3AF"
+                  strokeDasharray="4 4"
+                />
+              )}
+
+              {/* 인바디 느낌: 연한 회색 라인 + 초록 점 */}
+              <Line
+                type="monotone"
+                dataKey={metric.key}
+                stroke="#D4D4D8"
+                strokeWidth={3}
+                dot={{
+                  r: 4,
+                  fill: "#22C55E",
+                  stroke: "#FFFFFF",
+                  strokeWidth: 2,
+                }}
+                activeDot={{
+                  r: 6,
+                  fill: "#16A34A",
+                  stroke: "#FFFFFF",
+                  strokeWidth: 2,
                 }}
               />
-              <Legend
-                verticalAlign="bottom"
-                height={24}
-                wrapperStyle={{ fontSize: 12 }}
-              />
-
-              {/* 근육량(kg) - 민트색 */}
-              {(filter === "all" || filter === "muscle") && (
-                <Line
-                  type="monotone"
-                  dataKey="muscle"
-                  name="근육량(kg)"
-                  stroke="#00C9A7"
-                  strokeWidth={2.2}
-                  dot={{ r: 3.5, stroke: "#00C9A7", fill: "#00C9A7" }}
-                  activeDot={{ r: 5 }}
-                />
-              )}
-
-              {/* 체중(kg) - 파란색 */}
-              {(filter === "all" || filter === "weight") && (
-                <Line
-                  type="monotone"
-                  dataKey="weight"
-                  name="체중(kg)"
-                  stroke="#00A3FF"
-                  strokeWidth={2.2}
-                  dot={{ r: 3.5, stroke: "#00A3FF", fill: "#00A3FF" }}
-                  activeDot={{ r: 5 }}
-                />
-              )}
-
-              {/* 체지방(%) - 보라색 */}
-              {(filter === "all" || filter === "fat") && (
-                <Line
-                  type="monotone"
-                  dataKey="fat"
-                  name="체지방(%)"
-                  stroke="#A855F7"
-                  strokeWidth={2.2}
-                  dot={{ r: 3.5, stroke: "#A855F7", fill: "#A855F7" }}
-                  activeDot={{ r: 5 }}
-                />
-              )}
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
     </section>
+  );
+}
+
+/** InBody 스타일 상단 카드 (클릭 가능) */
+function MetricCard({ label, value, unit, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "flex flex-col justify-between rounded-3xl px-5 py-4 shadow-sm border transition " +
+        (active
+          ? "bg-white border-emerald-500 ring-2 ring-emerald-200"
+          : "bg-slate-50 border-slate-200 hover:border-emerald-400")
+      }
+    >
+      <p className="text-xs text-slate-500 mb-1">{label}</p>
+      <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+        {value}
+      </p>
+      <div
+        className={
+          "mt-3 inline-flex items-center justify-center rounded-full px-3 py-1 " +
+          (active ? "bg-emerald-500" : "bg-emerald-500/90")
+        }
+      >
+        <span className="text-[11px] font-semibold text-white">표준</span>
+      </div>
+    </button>
   );
 }

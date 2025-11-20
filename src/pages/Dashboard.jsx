@@ -63,12 +63,13 @@ export default function Dashboard({
         "
       >
         {/* 작은 화면에서는 아래쪽에 붙고, 큰 화면에서는 오른쪽 고정 */}
-        <ActivitySummary stats={stats} />
         <ActivityGoalPanel
           goals={goals}
           latestBody={latestBody}
           onSaveGoals={onSaveGoals}
         />
+        <ActivitySummary stats={stats} />
+        
       </aside>
     </section>
   );

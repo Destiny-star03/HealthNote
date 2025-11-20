@@ -58,7 +58,7 @@ export default function ActivityGoalPanel({ goals, latestBody, onSaveGoals }) {
           <div className="flex items-center gap-2">
             <span className="text-sky-500 text-2xl">🎯</span>
             <h2 className="text-lg font-semibold text-slate-800">
-              목표 달성률
+              목표달성률
             </h2>
           </div>
           <button
@@ -66,7 +66,7 @@ export default function ActivityGoalPanel({ goals, latestBody, onSaveGoals }) {
             onClick={handleOpen}
             className="px-4 py-2 rounded-full bg-sky-500 text-white text-sm font-medium shadow-sm hover:bg-sky-600 transition"
           >
-            목표 추가하기
+            변경
           </button>
         </div>
 

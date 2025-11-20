@@ -6,6 +6,7 @@ import BodyForm from "../components/BodyForm";
 import BodyTable from "../components/BodyTable";
 import ExerciseForm from "../components/ExerciseForm";
 import ExerciseTable from "../components/ExerciseTable";
+// import ProfilePage from "../components/ProfilePage"; 
 
 export default function App() {
   const [bodyRecords, setBodyRecords] = useState([]);
@@ -93,7 +94,7 @@ export default function App() {
             </span>
           </h1>
           <span className="text-xs text-muted-foreground">
-            React + Tailwind Theme
+            profile
           </span>
         </div>
       </header>
