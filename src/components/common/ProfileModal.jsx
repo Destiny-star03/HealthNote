@@ -1,11 +1,11 @@
-// src/components/ProfilePage.jsx
+// src/components/common/ProfileModal.jsx
 import { useState } from "react";
 
 export default function ProfilePage({ initialProfile, onClose, onSave }) {
     const [form, setForm] = useState({
-        age: initialProfile?.age || "",
-        height: initialProfile?.height || "",
-        weight: initialProfile?.weight || "",
+        age: initialProfile?.age ?? "",
+        height: initialProfile?.height ?? "",
+        sex: initialProfile?.sex ?? "male", // "male" | "female"
     });
 
     const handleChange = (e) => {
@@ -15,26 +15,26 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!form.age || !form.height || !form.weight) {
-            alert("나이, 키, 몸무게를 모두 입력해 주세요.");
+        if (!form.age || !form.height || !form.sex) {
+            alert("나이, 키, 성별을 모두 입력해 주세요.");
             return;
         }
         onSave({
             age: Number(form.age),
             height: Number(form.height),
-            weight: Number(form.weight),
+            sex: form.sex,
         });
     };
 
     return (
-        // 🔹 오버레이: 훨씬 더 밝게 + 살짝 블러
+        // 🔹 오버레이: 밝게 + 살짝 블러
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 backdrop-blur-sm">
             {/* 바깥 클릭 시 닫기 */}
             <div className="absolute inset-0" onClick={onClose} />
 
             <div className="relative z-10 w-full max-w-md mx-4">
-               <div className="rounded-3xl border border-black/40 shadow-xl bg-sky-50/80 backdrop-blur-md p-6">
-
+                {/* 🔹 카드: 파스텔 하늘색 + 검은 테두리 + 반투명 */}
+                <div className="rounded-3xl border border-black/40 shadow-xl bg-sky-50/80 backdrop-blur-md p-6">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <ProfileIconSmall />
@@ -52,7 +52,7 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
                     </div>
 
                     <p className="text-xs text-muted-foreground mb-4">
-                        나이 · 키 · 몸무게를 저장해 두면, 상단 인바디 카드에서{" "}
+                        나이 · 키 · 성별을 저장해 두면, 상단 인바디 카드에서{" "}
                         <span className="font-semibold text-emerald-500">
                             표준/이상/이하
                         </span>
@@ -88,18 +88,19 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
                             />
                         </div>
 
-                        {/* 몸무게 */}
+                        {/* 성별 */}
                         <div className="flex flex-col gap-1">
-                            <label className="font-medium text-slate-700">몸무게 (kg)</label>
-                            <input
-                                type="number"
-                                name="weight"
-                                value={form.weight}
+                            <label className="font-medium text-slate-700">성별</label>
+                            <select
+                                name="sex"
+                                value={form.sex}
                                 onChange={handleChange}
-                                className="rounded-xl border border-border px-3 py-2 bg-white shadow-inner
+                                className="rounded-xl border border-border px-3 py-2 bg-white
                            focus:outline-none focus:ring-2 focus:ring-sky-300"
-                                placeholder="예: 64"
-                            />
+                            >
+                                <option value="male">남</option>
+                                <option value="female">여</option>
+                            </select>
                         </div>
 
                         <div className="flex justify-end gap-2 pt-2">
