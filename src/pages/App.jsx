@@ -6,7 +6,7 @@ import BodyForm from "../components/BodyForm";
 import BodyTable from "../components/BodyTable";
 import ExerciseForm from "../components/ExerciseForm";
 import ExerciseTable from "../components/ExerciseTable";
-// import ProfilePage from "../components/ProfilePage"; 
+import ProfilePage from "../components/common/ProfileModal" // ✅ 프로필 모달 컴포넌트
 
 export default function App() {
   const [bodyRecords, setBodyRecords] = useState([]);
@@ -14,6 +14,10 @@ export default function App() {
   const [goals, setGoals] = useState({ weight: 62, muscle: 32 });
 
   const [editingBody, setEditingBody] = useState(null);
+
+  // 🔹 프로필 & 모달 상태
+  const [profile, setProfile] = useState(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleSaveGoals = (newGoals) => {
     const cleanGoals = {
@@ -38,10 +42,21 @@ export default function App() {
     const goalData =
       JSON.parse(localStorage.getItem("goals")) || { weight: 62, muscle: 32 };
 
+    const savedProfile = localStorage.getItem("healthnote_profile");
+    const profileData = savedProfile ? JSON.parse(savedProfile) : null;
+
     setBodyRecords(body);
     setExerciseRecords(exercise);
     setGoals(goalData);
+    if (profileData) setProfile(profileData);
   }, []);
+
+  // 🔹 프로필 저장
+  const handleSaveProfile = (data) => {
+    setProfile(data);
+    localStorage.setItem("healthnote_profile", JSON.stringify(data));
+    setIsProfileOpen(false);
+  };
 
   // 체성분 CRUD
   const handleAddBody = (record) => {
@@ -81,8 +96,6 @@ export default function App() {
   };
 
   return (
-
-
     <div className="min-h-screen bg-background text-foreground">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border">
@@ -93,9 +106,16 @@ export default function App() {
               · 나의 활동 대시보드
             </span>
           </h1>
-          <span className="text-xs text-muted-foreground">
-            profile
-          </span>
+
+          {/* 🔹 오른쪽 프로필 버튼 */}
+          <button
+            type="button"
+            onClick={() => setIsProfileOpen(true)}
+            className="flex flex-col items-center justify-center text-xs text-sky-500 hover:text-sky-600"
+          >
+            <ProfileIcon />
+            <span className="mt-0.5 font-medium">프로필</span>
+          </button>
         </div>
       </header>
 
@@ -106,8 +126,8 @@ export default function App() {
           exerciseRecords={exerciseRecords}
           goals={goals}
           onSaveGoals={handleSaveGoals}
+          profile={profile} // 추후 표준/이상/이하 계산에 사용 가능
         />
-
 
         {/* 1. 체성분 기록 관리 */}
         <section className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 space-y-4">
@@ -145,8 +165,7 @@ export default function App() {
             <div>
               <h2 className="text-lg font-semibold">🏋️ 운동 기록 관리</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                기록 날짜를 기준으로 여러 운동을 한 번에 추가하고, 날짜별로 묶어서
-                관리합니다.
+                기록 날짜를 기준으로 여러 운동을 한 번에 추가하고, 날짜별로 묶어서 관리합니다.
               </p>
             </div>
             <span className="hidden sm:inline-block text-xs text-primary">
@@ -156,9 +175,39 @@ export default function App() {
 
           <ExerciseForm onAddExercises={handleAddExercises} />
 
-          <ExerciseTable records={exerciseRecords} onDelete={handleDeleteExercise} />
+          <ExerciseTable
+            records={exerciseRecords}
+            onDelete={handleDeleteExercise}
+          />
         </section>
       </main>
+
+      {/* 🔹 프로필 모달 (별도 컴포넌트) */}
+      {isProfileOpen && (
+        <ProfilePage
+          initialProfile={profile}
+          onClose={() => setIsProfileOpen(false)}
+          onSave={handleSaveProfile}
+        />
+      )}
     </div>
+  );
+}
+
+/** 사람 아이콘 */
+function ProfileIcon() {
+  return (
+    <svg
+      className="w-6 h-6"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#0ea5e9"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5.5 19.2C6.6 16.7 9.1 15 12 15s5.4 1.7 6.5 4.2" />
+    </svg>
   );
 }
