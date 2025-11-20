@@ -1,112 +1,147 @@
 // src/components/ExerciseForm.jsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
-export default function ExerciseForm({
-  onAddExercise,
-  onUpdateExercise,
-  editingExercise,
-  cancelEdit,
-}) {
-  const [form, setForm] = useState({
-    date: "",
-    exercise: "",
-    duration: "",
-    calories: "",
-  });
+function getTodayString() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
 
-  useEffect(() => {
-    if (editingExercise) {
-      setForm({
-        date: editingExercise.date,
-        exercise: editingExercise.exercise,
-        duration: editingExercise.duration,
-        calories: editingExercise.calories,
-      });
-    } else {
-      setForm({ date: "", exercise: "", duration: "", calories: "" });
-    }
-  }, [editingExercise]);
+export default function ExerciseForm({ onAddExercises }) {
+  const [date, setDate] = useState(getTodayString());
 
-  const onChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const [items, setItems] = useState([
+    { id: crypto.randomUUID(), exercise: "", duration: "", calories: "" },
+  ]);
+
+  const handleItemChange = (id, field, value) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
+  const handleAddRow = () => {
+    setItems((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), exercise: "", duration: "", calories: "" },
+    ]);
+  };
+
+  const handleRemoveRow = (id) => {
+    setItems((prev) =>
+      prev.length === 1 ? prev : prev.filter((item) => item.id !== id)
+    );
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const payload = {
-      ...(editingExercise || { id: crypto.randomUUID() }),
-      date: form.date,
-      exercise: form.exercise,
-      duration: Number(form.duration),
-      calories: Number(form.calories),
-    };
+    const validItems = items.filter(
+      (item) =>
+        item.exercise.trim() !== "" &&
+        item.duration !== "" &&
+        item.calories !== ""
+    );
 
-    if (editingExercise) {
-      onUpdateExercise(payload);
-    } else {
-      onAddExercise(payload);
+    if (validItems.length === 0) {
+      alert("최소 1개 이상의 운동을 입력해 주세요.");
+      return;
     }
 
-    setForm({ date: "", exercise: "", duration: "", calories: "" });
+    const newRecords = validItems.map((item) => ({
+      id: crypto.randomUUID(),
+      date,
+      exercise: item.exercise.trim(),
+      duration: Number(item.duration),
+      calories: Number(item.calories),
+    }));
+
+    onAddExercises(newRecords);
+
+    setDate(getTodayString());
+    setItems([
+      { id: crypto.randomUUID(), exercise: "", duration: "", calories: "" },
+    ]);
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-xl shadow mt-6 grid grid-cols-4 gap-4"
+      className="bg-card border border-border rounded-2xl shadow-sm p-4 md:p-6 space-y-4"
     >
-      <input
-        type="date"
-        name="date"
-        value={form.date}
-        onChange={onChange}
-        required
-        className="p-2 border rounded"
-      />
-      <input
-        type="text"
-        name="exercise"
-        placeholder="운동명"
-        value={form.exercise}
-        onChange={onChange}
-        required
-        className="p-2 border rounded"
-      />
-      <input
-        type="number"
-        name="duration"
-        placeholder="시간(분)"
-        value={form.duration}
-        onChange={onChange}
-        required
-        className="p-2 border rounded"
-      />
-      <input
-        type="number"
-        name="calories"
-        placeholder="칼로리(kcal)"
-        value={form.calories}
-        onChange={onChange}
-        required
-        className="p-2 border rounded"
-      />
+      <div className="flex flex-col gap-1 max-w-xs">
+        <label className="text-xs text-muted-foreground">기록 날짜</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+          className="px-3 py-2 rounded-lg border border-border bg-input-background focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
 
-      <div className="col-span-4 flex gap-2">
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div key={item.id} className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder={`운동명 ${index + 1} (예: 스쿼트)`}
+              value={item.exercise}
+              onChange={(e) =>
+                handleItemChange(item.id, "exercise", e.target.value)
+              }
+              className="flex-1 px-3 py-2 rounded-lg border border-border bg-input-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <input
+              type="number"
+              placeholder="시간(분)"
+              value={item.duration}
+              onChange={(e) =>
+                handleItemChange(item.id, "duration", e.target.value)
+              }
+              className="w-24 px-3 py-2 rounded-lg border border-border bg-input-background focus:outline-none focus:ring-2 focus:ring-ring text-right"
+            />
+            <input
+              type="number"
+              placeholder="칼로리"
+              value={item.calories}
+              onChange={(e) =>
+                handleItemChange(item.id, "calories", e.target.value)
+              }
+              className="w-28 px-3 py-2 rounded-lg border border-border bg-input-background focus:outline-none focus:ring-2 focus:ring-ring text-right"
+            />
+
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={handleAddRow}
+                className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRemoveRow(item.id)}
+                className="px-3 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm disabled:opacity-40"
+                disabled={items.length === 1}
+              >
+                -
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-end">
         <button
           type="submit"
-          className="flex-1 bg-green-600 text-white rounded p-2 font-bold"
+          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold shadow-sm hover:opacity-90 transition"
         >
-          {editingExercise ? "운동 기록 수정" : "운동 기록 추가"}
+          운동 기록 추가
         </button>
-        {editingExercise && (
-          <button
-            type="button"
-            onClick={cancelEdit}
-            className="px-4 py-2 rounded border border-gray-300 text-gray-600"
-          >
-            취소
-          </button>
-        )}
       </div>
     </form>
   );

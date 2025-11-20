@@ -1,0 +1,17 @@
+/* src/index.css */
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+:root {
+  --font-size: 16px;
+  --background: #FFF5F7;
+  /* ... 나머지 변수들 ... */
+}
+
+/* .dark { ... } */
+/* @theme inline { ... } */
+/* @layer base { ... } */
+
+html {
+  font-size: var(--font-size);
+}
