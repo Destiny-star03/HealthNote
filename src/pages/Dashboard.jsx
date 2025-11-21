@@ -11,6 +11,7 @@ export default function Dashboard({
   goals,
   onSaveGoals,
   profile,
+  onOpenBodyModal,  // ✅ App에서 내려오는 콜백
 }) {
   const latestBody =
     bodyRecords && bodyRecords.length > 0
@@ -42,10 +43,13 @@ export default function Dashboard({
       {/* 🔹 왼쪽 메인 영역 (카드들이 위에서 아래로) */}
       <div className="flex-1 space-y-6">
         {/* 1. 최근 체성분 */}
-        <ActivityHeader latestBody={latestBody} />
+        <ActivityHeader
+          latestBody={latestBody}
+          onOpenBodyModal={onOpenBodyModal}  // ✅ 여기서 버튼 클릭 시 모달 열기
+        />
 
         {/* 2. 체성분 변화 추이 그래프 */}
-        <ActivityChart bodyRecords={bodyRecords}  profile={profile}/>
+        <ActivityChart bodyRecords={bodyRecords} profile={profile} />
 
         {/* 3. 최근 운동기록 */}
         <ActivityExerciseList exercises={exerciseRecords} />
@@ -63,14 +67,12 @@ export default function Dashboard({
           space-y-6
         "
       >
-        {/* 작은 화면에서는 아래쪽에 붙고, 큰 화면에서는 오른쪽 고정 */}
         <ActivityGoalPanel
           goals={goals}
           latestBody={latestBody}
           onSaveGoals={onSaveGoals}
         />
         <ActivitySummary stats={stats} />
-        
       </aside>
     </section>
   );

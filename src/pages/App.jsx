@@ -6,7 +6,8 @@ import BodyForm from "../components/BodyForm";
 import BodyTable from "../components/BodyTable";
 import ExerciseForm from "../components/ExerciseForm";
 import ExerciseTable from "../components/ExerciseTable";
-import ProfilePage from "../components/common/ProfileModal" // ✅ 프로필 모달 컴포넌트
+import ProfilePage from "../components/common/ProfileModal"; // ✅ 프로필 모달
+import BodyRecordModal from "../components/MyActivity/BodyRecordModal"; // ✅ 새 모달
 
 export default function App() {
   const [bodyRecords, setBodyRecords] = useState([]);
@@ -18,6 +19,9 @@ export default function App() {
   // 🔹 프로필 & 모달 상태
   const [profile, setProfile] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // 🔹 체성분 기록 관리 모달 상태
+  const [isBodyModalOpen, setIsBodyModalOpen] = useState(false);
 
   const handleSaveGoals = (newGoals) => {
     const cleanGoals = {
@@ -126,38 +130,43 @@ export default function App() {
           exerciseRecords={exerciseRecords}
           goals={goals}
           onSaveGoals={handleSaveGoals}
-          profile={profile} // 추후 표준/이상/이하 계산에 사용 가능
+          profile={profile}
+          onOpenBodyModal={() => setIsBodyModalOpen(true)} // ✅ 헤더의 "기록 관리" 버튼에서 호출
         />
 
-        {/* 1. 체성분 기록 관리 */}
-        <section className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold">⚖️ 체성분 기록 관리</h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                날짜별로 하루 한 번만 기록되며, 기본값은 오늘 날짜입니다.
-                필요하면 과거 날짜도 선택해서 기록할 수 있어요.
-              </p>
+        {/* 아래의 기존 체성분 관리 섹션은 모달로 옮겼기 때문에
+            화면에서는 더 이상 안 쓸 거라면 주석 처리해도 됨.
+            필요하면 남겨놓고 써도 OK */}
+        {false && (
+          <section className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-semibold">⚖️ 체성분 기록 관리</h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  날짜별로 하루 한 번만 기록되며, 기본값은 오늘 날짜입니다.
+                  필요하면 과거 날짜도 선택해서 기록할 수 있어요.
+                </p>
+              </div>
+              <span className="hidden sm:inline-block text-xs text-primary">
+                저장 · 수정 · 삭제
+              </span>
             </div>
-            <span className="hidden sm:inline-block text-xs text-primary">
-              저장 · 수정 · 삭제
-            </span>
-          </div>
 
-          <BodyForm
-            bodyRecords={bodyRecords}
-            onAddBody={handleAddBody}
-            onUpdateBody={handleUpdateBody}
-            editingBody={editingBody}
-            cancelEdit={() => setEditingBody(null)}
-          />
+            <BodyForm
+              bodyRecords={bodyRecords}
+              onAddBody={handleAddBody}
+              onUpdateBody={handleUpdateBody}
+              editingBody={editingBody}
+              cancelEdit={() => setEditingBody(null)}
+            />
 
-          <BodyTable
-            records={bodyRecords}
-            onDelete={handleDeleteBody}
-            onEdit={(record) => setEditingBody(record)}
-          />
-        </section>
+            <BodyTable
+              records={bodyRecords}
+              onDelete={handleDeleteBody}
+              onEdit={(record) => setEditingBody(record)}
+            />
+          </section>
+        )}
 
         {/* 2. 운동 기록 관리 */}
         <section className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 space-y-4 pb-10">
@@ -182,7 +191,23 @@ export default function App() {
         </section>
       </main>
 
-      {/* 🔹 프로필 모달 (별도 컴포넌트) */}
+      {/* 🔹 체성분 기록 관리 모달 */}
+      {isBodyModalOpen && (
+        <BodyRecordModal
+          bodyRecords={bodyRecords}
+          onAddBody={handleAddBody}
+          onUpdateBody={handleUpdateBody}
+          onDeleteBody={handleDeleteBody}
+          editingBody={editingBody}
+          setEditingBody={setEditingBody}
+          onClose={() => {
+            setIsBodyModalOpen(false);
+            setEditingBody(null);
+          }}
+        />
+      )}
+
+      {/* 🔹 프로필 모달 */}
       {isProfileOpen && (
         <ProfilePage
           initialProfile={profile}
