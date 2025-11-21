@@ -1,9 +1,9 @@
 // src/components/common/BodyRecordModal.jsx
-import BodyForm from "../BodyForm";
-import BodyTable from "../BodyTable";
+import BodyForm from "../forms/BodyForm";
+import BodyTable from "../tables/BodyTable";
 
 export default function BodyRecordModal({
-  bodyRecords,
+  bodyRecords = [],
   onAddBody,
   onUpdateBody,
   onDeleteBody,
@@ -11,9 +11,22 @@ export default function BodyRecordModal({
   setEditingBody,
   onClose,
 }) {
+  // 오버레이(배경) 클릭 시 닫기 – 안쪽 카드 클릭은 무시
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg mx-4 bg-sky-50 rounded-3xl shadow-[0_20px_60px_rgba(15,23,42,0.35)] border border-sky-100 overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm"
+      onClick={handleOverlayClick}
+    >
+      <div
+        className="w-full max-w-lg mx-4 bg-sky-50 rounded-3xl shadow-[0_20px_60px_rgba(15,23,42,0.35)] border border-sky-100 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-sky-100 bg-sky-50/80">
           <h2 className="text-base sm:text-lg font-semibold text-slate-800">
@@ -38,16 +51,18 @@ export default function BodyRecordModal({
               onUpdateBody={onUpdateBody}
               editingBody={editingBody}
               cancelEdit={() => setEditingBody(null)}
-              onDeleteBody={onDeleteBody} // 휴지통 버튼까지 쓰고 싶으면 전달
+              onDeleteBody={onDeleteBody}
             />
           </div>
 
           {/* 최근 기록 리스트 (아래쪽) */}
-          <BodyTable
-            records={bodyRecords}
-            onDelete={onDeleteBody}
-            onEdit={setEditingBody}
-          />
+          <div className="bg-white rounded-2xl border border-sky-100 px-4 py-3 shadow-sm max-h-64 overflow-y-auto">
+            <BodyTable
+              records={bodyRecords}
+              onDelete={onDeleteBody}
+              onEdit={setEditingBody}
+            />
+          </div>
         </div>
 
         {/* 하단 버튼 */}

@@ -1,9 +1,19 @@
 // src/components/MyActivity/ActivitySummary.jsx
 
 export default function ActivitySummary({ stats }) {
-  const workouts = stats?.workouts ?? 0;
-  const avgDuration = stats?.avgDuration ?? 0;
-  const totalCalories = stats?.totalCalories ?? 0;
+  // stats가 undefined여도 안전하게 처리
+  const {
+    workouts = 0,
+    avgDuration = 0,
+    totalCalories = 0,
+    activeDays, // 있으면 일수 기준으로 사용
+  } = stats || {};
+
+  // 🔹 운동한 '날짜 수'가 넘어오면 우선 사용, 없으면 workouts로 대체
+  const workoutDays = typeof activeDays === "number" ? activeDays : workouts;
+
+  // 🔹 3일 이상 운동했으면 하이라이트
+  const hitWorkoutGoal = workoutDays >= 3;
 
   return (
     <section className="bg-sky-50 rounded-3xl border border-sky-100 p-5 lg:p-6 shadow-sm h-full">
@@ -14,12 +24,15 @@ export default function ActivitySummary({ stats }) {
           <span>최근 7일 요약</span>
         </h2>
 
-        {/* 3개 요약 카드 (PC 기준 크게) */}
+        {/* 3개 요약 카드 */}
         <div className="flex flex-col gap-4 flex-1">
+          {/* 🔹 운동횟수 카드: 3일 이상이면 강조 */}
           <SummaryCard
             icon="📈"
             label="운동횟수"
             value={`${workouts}회`}
+            highlight={hitWorkoutGoal}
+            badgeText={hitWorkoutGoal ? "3일 이상 운동 달성!" : undefined}
           />
           <SummaryCard
             icon="⏱️"
@@ -37,22 +50,38 @@ export default function ActivitySummary({ stats }) {
   );
 }
 
-function SummaryCard({ icon, label, value }) {
+function SummaryCard({ icon, label, value, highlight = false, badgeText }) {
+  const baseClass =
+    "flex-1 min-h-[88px] rounded-2xl px-4 py-3 lg:px-5 lg:py-4 shadow-inner flex items-center justify-between transition-colors";
+
+  const colorClass = highlight
+    ? "bg-emerald-50 border border-emerald-200"
+    : "bg-sky-50 border border-sky-100";
+
+  const valueTextClass = highlight
+    ? "text-base lg:text-xl font-semibold text-emerald-700"
+    : "text-base lg:text-xl font-semibold text-slate-800";
+
   return (
-    <div className="flex-1 min-h-[88px] bg-sky-50 rounded-2xl px-4 py-3 lg:px-5 lg:py-4 shadow-inner flex items-center justify-between">
-      {/* 왼쪽: 아이콘 + 라벨 */}
-      <div className="flex items-center gap-3">
-        <span className="text-2xl text-sky-500">{icon}</span>
-        <span className="text-sm lg:text-base font-medium text-sky-600">
-          {label}
-        </span>
+    <div className={`${baseClass} ${colorClass}`}>
+      {/* 왼쪽: 아이콘 + 라벨 + (배지) */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl text-sky-500">{icon}</span>
+          <span className="text-sm lg:text-base font-medium text-sky-600">
+            {label}
+          </span>
+        </div>
+        {highlight && badgeText && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700 mt-0.5">
+            ✅ {badgeText}
+          </span>
+        )}
       </div>
 
       {/* 오른쪽: 값 */}
       <div className="text-right">
-        <p className="text-base lg:text-xl font-semibold text-slate-800">
-          {value}
-        </p>
+        <p className={valueTextClass}>{value}</p>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ export default function Dashboard({
   goals,
   onSaveGoals,
   profile,
-  onOpenBodyModal,  // ✅ App에서 내려오는 콜백
+  onOpenBodyModal,
   onOpenExerciseModal,
 }) {
   const latestBody =
@@ -19,17 +19,38 @@ export default function Dashboard({
       ? bodyRecords[bodyRecords.length - 1]
       : null;
 
-  const totalWorkouts = exerciseRecords.length;
-  const totalCalories = exerciseRecords.reduce((a, c) => a + c.calories, 0);
-  const avgDuration = Math.round(
-    (exerciseRecords.reduce((a, c) => a + c.duration, 0) /
-      (totalWorkouts || 1)) || 0
-  );
+  /* 🔹 1. 최근 7일 운동만 필터링 */
+  const today = new Date();
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+  const recentExercises = (exerciseRecords || []).filter((ex) => {
+    if (!ex.date) return false;
+    const d = new Date(ex.date);
+    if (isNaN(d)) return false;
+
+    const diffDays = (today - d) / MS_PER_DAY;
+    // 오늘 기준 0일 ~ 6일 전까지 → 최근 7일
+    return diffDays >= 0 && diffDays < 7;
+  });
+
+  /* 🔹 2. 최근 7일 기준 stats 계산 */
+  const totalWorkouts = recentExercises.length;
+  const totalCalories = recentExercises.reduce(
+    (acc, cur) => acc + (Number(cur.calories) || 0),
+    0
+  );
+  const totalDuration = recentExercises.reduce(
+    (acc, cur) => acc + (Number(cur.duration) || 0),
+    0
+  );
+  const avgDuration =
+    totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
+  const activeDays = new Set(recentExercises.map(e => e.date)).size;
   const stats = {
     workouts: totalWorkouts,
     totalCalories,
     avgDuration,
+    activeDays,
   };
 
   return (
@@ -46,19 +67,17 @@ export default function Dashboard({
         {/* 1. 최근 체성분 */}
         <ActivityHeader
           latestBody={latestBody}
-          onOpenBodyModal={onOpenBodyModal}  // ✅ 여기서 버튼 클릭 시 모달 열기
+          onOpenBodyModal={onOpenBodyModal}
         />
 
         {/* 2. 체성분 변화 추이 그래프 */}
         <ActivityChart bodyRecords={bodyRecords} profile={profile} />
 
-        {/* 3. 최근 운동기록 */}
-        <ActivityExerciseList 
-        exercises={exerciseRecords} 
-        onOpenRecordModal={onOpenExerciseModal}/>
-
-        {/* 4. (옵션) 체성분 / 운동 기록 관리 폼들 */}
-        {/* BodyForm, ExerciseForm, 테이블 등 */}
+        {/* 3. 최근 운동기록 리스트 (여기는 전체 운동 기록 사용) */}
+        <ActivityExerciseList
+          exercises={exerciseRecords}
+          onOpenRecordModal={onOpenExerciseModal}
+        />
       </div>
 
       {/* 🔹 오른쪽 사이드바 (최근 7일 요약 + 목표 달성률) */}
@@ -75,6 +94,7 @@ export default function Dashboard({
           latestBody={latestBody}
           onSaveGoals={onSaveGoals}
         />
+        {/* ✅ 여기서 보여주는 값만 'recentExercises' 기준 */}
         <ActivitySummary stats={stats} />
       </aside>
     </section>

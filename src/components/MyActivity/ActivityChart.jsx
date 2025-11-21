@@ -10,16 +10,105 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useMemo, useState, useEffect } from "react";
-import { getMetricStatus } from "../../lib/healthRules"; // 경로 확인!
+import { getMetricStatus } from "../../lib/healthRules";
 
+// ───────────────────────────
+// 상수 & 헬퍼
+// ───────────────────────────
 const METRICS = {
   weight: { key: "weight", label: "체중 (kg)", unit: "kg" },
   muscle: { key: "muscle", label: "골격근량 (kg)", unit: "kg" },
   fat: { key: "fat", label: "체지방률 (%)", unit: "%" },
 };
 
+const formatNumber = (value, digits = 1) => {
+  if (value === null || value === undefined || isNaN(value)) return "-";
+  return Number(value).toFixed(digits);
+};
+
+const getStatusLabel = (status) => {
+  if (status === "high") return "표준 이상";
+  if (status === "low") return "표준 이하";
+  return "표준";
+};
+
+const getStatusColorClass = (status) => {
+  if (status === "high") return "bg-red-500";
+  if (status === "low") return "bg-slate-400";
+  return "bg-emerald-500";
+};
+
+// Y축 도메인 계산
+const calcDomain = (data, metricKey) => {
+  const values = data
+    .map((d) => Number(d[metricKey]))
+    .filter((v) => !isNaN(v));
+
+  if (values.length === 0) return { minY: 0, maxY: 10 };
+
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  const padding = 3;
+
+  const minY = Math.max(0, rawMin - padding);
+  const maxY = rawMax + padding;
+
+  return { minY, maxY };
+};
+
+// ───────────────────────────
+// 메인 컴포넌트
+// ───────────────────────────
 export default function ActivityChart({ bodyRecords, profile }) {
-  if (!bodyRecords || bodyRecords.length === 0) {
+  // ✅ 훅보다 먼저 쓰이는 일반 변수/값
+  const hasData = Array.isArray(bodyRecords) && bodyRecords.length > 0;
+
+  // ✅ 훅은 항상 호출되게
+  const sortedData = useMemo(
+    () =>
+      hasData
+        ? [...bodyRecords].sort((a, b) => (a.date > b.date ? 1 : -1))
+        : [],
+    [bodyRecords, hasData]
+  );
+
+  const latestRecord = sortedData[sortedData.length - 1] ?? null;
+
+  const [activeRecord, setActiveRecord] = useState(latestRecord);
+  const [selectedMetric, setSelectedMetric] = useState("weight");
+
+  useEffect(() => {
+    setActiveRecord(latestRecord);
+  }, [latestRecord]);
+
+  const currentRecord = activeRecord ?? latestRecord;
+  const metric = METRICS[selectedMetric];
+  const activeValue = currentRecord ? currentRecord[metric.key] : null;
+
+  // ✅ 선택된 metric 기준 Y축 범위
+  const { minY, maxY } = useMemo(
+    () => calcDomain(sortedData, metric.key),
+    [sortedData, metric.key]
+  );
+
+  // 표준/이상/이하 상태
+  const weightStatus =
+    profile && currentRecord
+      ? getMetricStatus("weight", currentRecord, profile)
+      : "normal";
+
+  const muscleStatus =
+    profile && currentRecord
+      ? getMetricStatus("muscle", currentRecord, profile)
+      : "normal";
+
+  const fatStatus =
+    profile && currentRecord
+      ? getMetricStatus("fat", currentRecord, profile)
+      : "normal";
+
+  // 🔹 데이터 없을 때 화면 (❗️이제는 훅 호출 이후에 위치)
+  if (!hasData || !latestRecord) {
     return (
       <section className="w-full bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm text-center text-sm text-slate-500">
         아직 체성분 기록이 없습니다. 아래에서 기록을 추가하면 그래프가 나타납니다.
@@ -27,75 +116,7 @@ export default function ActivityChart({ bodyRecords, profile }) {
     );
   }
 
-  // 🔹 날짜순 정렬
-  const sortedData = useMemo(
-    () => [...bodyRecords].sort((a, b) => (a.date > b.date ? 1 : -1)),
-    [bodyRecords]
-  );
-
-  const latestRecord = sortedData[sortedData.length - 1];
-
-  // 🔹 기본 선택: 가장 최근 기록
-  const [activeRecord, setActiveRecord] = useState(latestRecord);
-
-  // 🔹 현재 선택된 metric (체중 / 근육량 / 체지방률)
-  const [selectedMetric, setSelectedMetric] = useState("weight");
-
-  // bodyRecords가 바뀌면 activeRecord도 최신값으로 갱신
-  useEffect(() => {
-    setActiveRecord(latestRecord);
-  }, [latestRecord]);
-
-  const formatNumber = (value, digits = 1) => {
-    if (value === null || value === undefined || isNaN(value)) return "-";
-    return Number(value).toFixed(digits);
-  };
-
-  // 🔹 지금 화면에서 기준으로 삼을 레코드
-  const currentRecord = activeRecord ?? latestRecord;
-
-  // 🔹 현재 선택된 metric 정보
-  const metric = METRICS[selectedMetric];
-  const activeValue = currentRecord ? currentRecord[metric.key] : null;
-
-  // 🔹 Y축 최소/최대값 계산 (현재 선택된 metric 기준)
-  const { minY, maxY } = useMemo(() => {
-    const key = metric.key;
-
-    const values = sortedData
-      .map((d) => Number(d[key]))
-      .filter((v) => !isNaN(v));
-
-    if (values.length === 0) {
-      return { minY: 0, maxY: 10 };
-    }
-
-    const rawMin = Math.min(...values);
-    const rawMax = Math.max(...values);
-
-    const padding = 3; // 여유값
-
-    // 체지방률 등은 0 밑으로 안내려가게
-    const minY = Math.max(0, rawMin - padding);
-    const maxY = rawMax + padding;
-
-    return { minY, maxY };
-  }, [sortedData, metric]);
-
-  // 🔹 표준/이상/이하 상태 계산
-  const weightStatus = profile
-    ? getMetricStatus("weight", currentRecord, profile)
-    : "normal";
-
-  const muscleStatus = profile
-    ? getMetricStatus("muscle", currentRecord, profile)
-    : "normal";
-
-  const fatStatus = profile
-    ? getMetricStatus("fat", currentRecord, profile)
-    : "normal";
-
-  // 🔹 그래프 클릭 → 해당 날짜 데이터 선택
+  // 그래프 클릭 → 해당 날짜 데이터 선택
   const handleChartClick = (state) => {
     if (!state) return;
 
@@ -140,7 +161,7 @@ export default function ActivityChart({ bodyRecords, profile }) {
           </p>
         </div>
 
-        {/* 🔹 인바디 스타일 카드 3개 */}
+        {/* 상단 3개 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <MetricCard
             label="체중 (kg)"
@@ -168,7 +189,7 @@ export default function ActivityChart({ bodyRecords, profile }) {
           />
         </div>
 
-        {/* 🔹 라인 차트 */}
+        {/* 라인 차트 */}
         <div className="w-full h-64 sm:h-72 min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
@@ -194,7 +215,6 @@ export default function ActivityChart({ bodyRecords, profile }) {
                 labelFormatter={(label) => `날짜: ${label}`}
               />
 
-              {/* 선택된 날짜 기준 세로 점선 */}
               {currentRecord && (
                 <ReferenceLine
                   x={currentRecord.date}
@@ -203,7 +223,6 @@ export default function ActivityChart({ bodyRecords, profile }) {
                 />
               )}
 
-              {/* 인바디 느낌: 연한 회색 라인 + 초록 점 */}
               <Line
                 type="monotone"
                 dataKey={metric.key}
@@ -234,20 +253,12 @@ export default function ActivityChart({ bodyRecords, profile }) {
 function MetricCard({
   label,
   value,
-  unit,
   active,
   status = "normal",
   onClick,
 }) {
-  const statusLabel =
-    status === "high" ? "표준 이상" : status === "low" ? "표준 이하" : "표준";
-
-  const statusColor =
-    status === "high"
-      ? "bg-red-500"
-      : status === "low"
-      ? "bg-slate-400"
-      : "bg-emerald-500";
+  const statusLabel = getStatusLabel(status);
+  const statusColorClass = getStatusColorClass(status);
 
   return (
     <button
@@ -267,7 +278,7 @@ function MetricCard({
       <div
         className={
           "mt-3 inline-flex items-center justify-center rounded-full px-3 py-1 " +
-          statusColor
+          statusColorClass
         }
       >
         <span className="text-[11px] font-semibold text-white">

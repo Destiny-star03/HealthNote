@@ -1,218 +1,120 @@
 // src/pages/App.jsx
-import { useState, useEffect } from "react";
 import Dashboard from "./Dashboard";
-
-import BodyForm from "../components/BodyForm";
-import BodyTable from "../components/BodyTable";
-import ExerciseForm from "../components/ExerciseForm";
-import ExerciseTable from "../components/ExerciseTable";
-import ProfilePage from "../components/common/ProfileModal"; // ✅ 프로필 모달
-import BodyRecordModal from "../components/common/BodyRecordModal"; // ✅ 새 모달
-import ExerciseRecordModal from "../components/common/ExerciseRecordModal";
+import ProfilePage from "../components/modals/ProfileModal.jsx";
+import BodyRecordModal from "../components/modals/BodyRecordModal.jsx";
+import ExerciseRecordModal from "../components/modals/ExerciseRecordModal";
+import useHealthNoteData from "../hooks/useHealthNoteData";
 
 export default function App() {
-  const [bodyRecords, setBodyRecords] = useState([]);
-  const [exerciseRecords, setExerciseRecords] = useState([]);
-  const [goals, setGoals] = useState({ weight: 62, muscle: 32 });
+  const {
+    // ===== 상태 =====
+    bodyRecords,
+    exerciseRecords,
+    goals,
+    profile,
+    editingBody,
+    setEditingBody,
 
-  const [editingBody, setEditingBody] = useState(null);
+    // ===== CRUD =====
+    saveGoals,
+    saveProfile,
+    addBody,
+    updateBody,
+    deleteBody,
+    addExercises,
+    deleteExercise,
 
-  // 🔹 프로필 & 모달 상태
-  const [profile, setProfile] = useState(null);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  // 🔹 체성분 기록 관리 모달 상태
-  const [isBodyModalOpen, setIsBodyModalOpen] = useState(false);
-  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
-
-  const handleSaveGoals = (newGoals) => {
-    const cleanGoals = {
-      weight:
-        newGoals.weight !== undefined && newGoals.weight !== null
-          ? Number(newGoals.weight)
-          : null,
-      muscle:
-        newGoals.muscle !== undefined && newGoals.muscle !== null
-          ? Number(newGoals.muscle)
-          : null,
-    };
-
-    setGoals(cleanGoals);
-    localStorage.setItem("goals", JSON.stringify(cleanGoals));
-  };
-
-  useEffect(() => {
-    const body = JSON.parse(localStorage.getItem("bodyRecords")) || [];
-    const exercise =
-      JSON.parse(localStorage.getItem("exerciseRecords")) || [];
-    const goalData =
-      JSON.parse(localStorage.getItem("goals")) || { weight: 62, muscle: 32 };
-
-    const savedProfile = localStorage.getItem("healthnote_profile");
-    const profileData = savedProfile ? JSON.parse(savedProfile) : null;
-
-    setBodyRecords(body);
-    setExerciseRecords(exercise);
-    setGoals(goalData);
-    if (profileData) setProfile(profileData);
-  }, []);
-
-  // 🔹 프로필 저장
-  const handleSaveProfile = (data) => {
-    setProfile(data);
-    localStorage.setItem("healthnote_profile", JSON.stringify(data));
-    setIsProfileOpen(false);
-  };
-
-  // 체성분 CRUD
-  const handleAddBody = (record) => {
-    const updated = [...bodyRecords, record];
-    setBodyRecords(updated);
-    localStorage.setItem("bodyRecords", JSON.stringify(updated));
-  };
-
-  const handleUpdateBody = (updatedRecord) => {
-    const updated = bodyRecords.map((r) =>
-      r.id === updatedRecord.id ? updatedRecord : r
-    );
-    setBodyRecords(updated);
-    localStorage.setItem("bodyRecords", JSON.stringify(updated));
-    setEditingBody(null);
-  };
-
-  const handleDeleteBody = (id) => {
-    if (!confirm("해당 체성분 기록을 삭제할까요?")) return;
-    const updated = bodyRecords.filter((r) => r.id !== id);
-    setBodyRecords(updated);
-    localStorage.setItem("bodyRecords", JSON.stringify(updated));
-  };
-
-  // 운동 CRUD (여러 개 한 번에 추가)
-  const handleAddExercises = (newRecords) => {
-    const updated = [...exerciseRecords, ...newRecords];
-    setExerciseRecords(updated);
-    localStorage.setItem("exerciseRecords", JSON.stringify(updated));
-  };
-
-  const handleDeleteExercise = (id) => {
-    if (!confirm("해당 운동 기록을 삭제할까요?")) return;
-    const updated = exerciseRecords.filter((r) => r.id !== id);
-    setExerciseRecords(updated);
-    localStorage.setItem("exerciseRecords", JSON.stringify(updated));
-  };
+    // ===== 모달 상태 & 컨트롤 =====
+    isProfileOpen,
+    isBodyModalOpen,
+    isExerciseModalOpen,
+    openProfileModal,
+    closeProfileModal,
+    openBodyModal,
+    closeBodyModal,
+    openExerciseModal,
+    closeExerciseModal,
+  } = useHealthNoteData();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* 상단 헤더 */}
-      <header className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">
-            <span className="text-primary font-bold">HealthNote</span>
-            <span className="ml-2 text-sm text-muted-foreground">
-              · 나의 활동 대시보드
-            </span>
-          </h1>
+      <Header onOpenProfile={openProfileModal} />
 
-          {/* 🔹 오른쪽 프로필 버튼 */}
-          <button
-            type="button"
-            onClick={() => setIsProfileOpen(true)}
-            className="flex flex-col items-center justify-center text-xs text-sky-500 hover:text-sky-600"
-          >
-            <ProfileIcon />
-            <span className="mt-0.5 font-medium">프로필</span>
-          </button>
-        </div>
-      </header>
-
+      {/* 메인 대시보드 */}
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-10">
-        {/* 0. 상단 “나의 활동” 대시보드 */}
         <Dashboard
           bodyRecords={bodyRecords}
           exerciseRecords={exerciseRecords}
           goals={goals}
-          onSaveGoals={handleSaveGoals}
+          onSaveGoals={saveGoals}
           profile={profile}
-          onOpenBodyModal={() => setIsBodyModalOpen(true)} // ✅ 헤더의 "기록 관리" 버튼에서 호출
-          onOpenExerciseModal={() => setIsExerciseModalOpen(true)}
+          onOpenBodyModal={openBodyModal}
+          onOpenExerciseModal={openExerciseModal}
         />
-
-        {/* 아래의 기존 체성분 관리 섹션은 모달로 옮겼기 때문에
-            화면에서는 더 이상 안 쓸 거라면 주석 처리해도 됨.
-            필요하면 남겨놓고 써도 OK */}
-        {false && (
-          <section className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h2 className="text-lg font-semibold">⚖️ 체성분 기록 관리</h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                  날짜별로 하루 한 번만 기록되며, 기본값은 오늘 날짜입니다.
-                  필요하면 과거 날짜도 선택해서 기록할 수 있어요.
-                </p>
-              </div>
-              <span className="hidden sm:inline-block text-xs text-primary">
-                저장 · 수정 · 삭제
-              </span>
-            </div>
-
-            <BodyForm
-              bodyRecords={bodyRecords}
-              onAddBody={handleAddBody}
-              onUpdateBody={handleUpdateBody}
-              editingBody={editingBody}
-              cancelEdit={() => setEditingBody(null)}
-              onDeleteBody={handleDeleteBody}
-            />
-
-            <BodyTable
-              records={bodyRecords}
-              onDelete={handleDeleteBody}
-              onEdit={(record) => setEditingBody(record)}
-            />
-          </section>
-        )}
-
-  
       </main>
 
-      {/* 🔹 체성분 기록 관리 모달 */}
+      {/* 체성분 기록 관리 모달 */}
       {isBodyModalOpen && (
         <BodyRecordModal
           bodyRecords={bodyRecords}
-          onAddBody={handleAddBody}
-          onUpdateBody={handleUpdateBody}
-          onDeleteBody={handleDeleteBody}
+          onAddBody={addBody}
+          onUpdateBody={updateBody}
+          onDeleteBody={deleteBody}
           editingBody={editingBody}
           setEditingBody={setEditingBody}
-          onClose={() => {
-            setIsBodyModalOpen(false);
-            setEditingBody(null);
-          }}
+          onClose={closeBodyModal}
         />
       )}
 
-      {/* 🔹 프로필 모달 */}
-      {isProfileOpen && (
-        <ProfilePage
-          initialProfile={profile}
-          onClose={() => setIsProfileOpen(false)}
-          onSave={handleSaveProfile}
-        />
-      )}
-
+      {/* 운동 기록 관리 모달 */}
       {isExerciseModalOpen && (
         <ExerciseRecordModal
           exerciseRecords={exerciseRecords}
-          onAddExercises={handleAddExercises}
-          onDeleteExercise={handleDeleteExercise}
-          onClose={() => setIsExerciseModalOpen(false)}
+          onAddExercises={addExercises}
+          onDeleteExercise={deleteExercise}
+          onClose={closeExerciseModal}
+        />
+      )}
+
+      {/* 프로필 모달 */}
+      {isProfileOpen && (
+        <ProfilePage
+          initialProfile={profile}
+          onClose={closeProfileModal}
+          onSave={saveProfile}
         />
       )}
     </div>
   );
 }
 
-/** 사람 아이콘 */
+/** 상단 헤더를 분리해서 역할을 더 명확하게 */
+function Header({ onOpenProfile }) {
+  return (
+    <header className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border">
+      <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <h1 className="text-xl font-semibold tracking-tight">
+          <span className="text-primary font-bold">HealthNote</span>
+          <span className="ml-2 text-sm text-muted-foreground">
+            · 나의 활동 대시보드
+          </span>
+        </h1>
+
+        <button
+          type="button"
+          onClick={onOpenProfile}
+          className="flex flex-col items-center justify-center text-xs text-sky-500 hover:text-sky-600"
+        >
+          <ProfileIcon />
+          <span className="mt-0.5 font-medium">프로필</span>
+        </button>
+      </div>
+    </header>
+  );
+}
+
+/** 사람 아이콘 그대로 유지 */
 function ProfileIcon() {
   return (
     <svg
