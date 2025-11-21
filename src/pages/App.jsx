@@ -7,7 +7,7 @@ import BodyTable from "../components/BodyTable";
 import ExerciseForm from "../components/ExerciseForm";
 import ExerciseTable from "../components/ExerciseTable";
 import ProfilePage from "../components/common/ProfileModal"; // ✅ 프로필 모달
-import BodyRecordModal from "../components/MyActivity/BodyRecordModal"; // ✅ 새 모달
+import BodyRecordModal from "../components/common/BodyRecordModal"; // ✅ 새 모달
 
 export default function App() {
   const [bodyRecords, setBodyRecords] = useState([]);
@@ -158,6 +158,7 @@ export default function App() {
               onUpdateBody={handleUpdateBody}
               editingBody={editingBody}
               cancelEdit={() => setEditingBody(null)}
+              onDeleteBody={handleDeleteBody}
             />
 
             <BodyTable
