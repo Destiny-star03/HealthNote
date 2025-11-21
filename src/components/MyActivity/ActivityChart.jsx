@@ -10,6 +10,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useMemo, useState, useEffect } from "react";
+import { getMetricStatus } from "../../lib/healthRules"; // 경로 확인!
 
 const METRICS = {
   weight: { key: "weight", label: "체중 (kg)", unit: "kg" },
@@ -17,7 +18,7 @@ const METRICS = {
   fat: { key: "fat", label: "체지방률 (%)", unit: "%" },
 };
 
-export default function ActivityChart({ bodyRecords }) {
+export default function ActivityChart({ bodyRecords, profile }) {
   if (!bodyRecords || bodyRecords.length === 0) {
     return (
       <section className="w-full bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm text-center text-sm text-slate-500">
@@ -26,7 +27,7 @@ export default function ActivityChart({ bodyRecords }) {
     );
   }
 
-  // 날짜순 정렬
+  // 🔹 날짜순 정렬
   const sortedData = useMemo(
     () => [...bodyRecords].sort((a, b) => (a.date > b.date ? 1 : -1)),
     [bodyRecords]
@@ -34,12 +35,13 @@ export default function ActivityChart({ bodyRecords }) {
 
   const latestRecord = sortedData[sortedData.length - 1];
 
-  // 그래프에서 선택된 지점 (기본: 가장 최근 값)
+  // 🔹 기본 선택: 가장 최근 기록
   const [activeRecord, setActiveRecord] = useState(latestRecord);
 
-  // 어떤 항목의 그래프를 볼지 (체중 / 근육량 / 체지방률)
+  // 🔹 현재 선택된 metric (체중 / 근육량 / 체지방률)
   const [selectedMetric, setSelectedMetric] = useState("weight");
 
+  // bodyRecords가 바뀌면 activeRecord도 최신값으로 갱신
   useEffect(() => {
     setActiveRecord(latestRecord);
   }, [latestRecord]);
@@ -49,12 +51,51 @@ export default function ActivityChart({ bodyRecords }) {
     return Number(value).toFixed(digits);
   };
 
-  // 🔹 지금 화면에 보여줄 기준 레코드
-  //    - 기본: 가장 최근 값
-  //    - 그래프/날짜 클릭 후: activeRecord
+  // 🔹 지금 화면에서 기준으로 삼을 레코드
   const currentRecord = activeRecord ?? latestRecord;
 
-  // 🔹 그래프 영역 클릭 시: 점 또는 해당 날짜 라인을 클릭하면 그 날짜 데이터 선택
+  // 🔹 현재 선택된 metric 정보
+  const metric = METRICS[selectedMetric];
+  const activeValue = currentRecord ? currentRecord[metric.key] : null;
+
+  // 🔹 Y축 최소/최대값 계산 (현재 선택된 metric 기준)
+  const { minY, maxY } = useMemo(() => {
+    const key = metric.key;
+
+    const values = sortedData
+      .map((d) => Number(d[key]))
+      .filter((v) => !isNaN(v));
+
+    if (values.length === 0) {
+      return { minY: 0, maxY: 10 };
+    }
+
+    const rawMin = Math.min(...values);
+    const rawMax = Math.max(...values);
+
+    const padding = 3; // 여유값
+
+    // 체지방률 등은 0 밑으로 안내려가게
+    const minY = Math.max(0, rawMin - padding);
+    const maxY = rawMax + padding;
+
+    return { minY, maxY };
+  }, [sortedData, metric]);
+
+  // 🔹 표준/이상/이하 상태 계산
+  const weightStatus = profile
+    ? getMetricStatus("weight", currentRecord, profile)
+    : "normal";
+
+  const muscleStatus = profile
+    ? getMetricStatus("muscle", currentRecord, profile)
+    : "normal";
+
+  const fatStatus = profile
+    ? getMetricStatus("fat", currentRecord, profile)
+    : "normal";
+
+  // 🔹 그래프 클릭 → 해당 날짜 데이터 선택
   const handleChartClick = (state) => {
     if (!state) return;
 
@@ -74,35 +115,8 @@ export default function ActivityChart({ bodyRecords }) {
     }
   };
 
-  const metric = METRICS[selectedMetric];
-  const activeValue = currentRecord ? currentRecord[metric.key] : null;
-
-  // 🔹 선택된 metric 기준으로 Y축 최소/최대값 계산
-  const { minY, maxY } = useMemo(() => {
-    const key = metric.key;
-
-    const values = sortedData
-      .map((d) => Number(d[key]))
-      .filter((v) => !isNaN(v));
-
-    if (values.length === 0) {
-      return { minY: 0, maxY: 10 }; // 안전한 기본값
-    }
-
-    const rawMin = Math.min(...values);
-    const rawMax = Math.max(...values);
-
-    const padding = 3; // 여유값
-
-    // 최소값은 0 아래로 내려가지 않게 (특히 체지방률 %)
-    const minY = Math.max(0, rawMin - padding);
-    const maxY = rawMax + padding;
-
-    return { minY, maxY };
-  }, [sortedData, metric]);
-
   return (
-    <section className="w-full bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
+    <section className="chart-container w-full bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
       <div className="bg-white rounded-3xl border border-sky-100 px-4 sm:px-6 py-4 sm:py-5 shadow-sm">
         {/* 제목 + 선택된 측정값 */}
         <div className="flex items-center justify-between mb-4">
@@ -126,13 +140,14 @@ export default function ActivityChart({ bodyRecords }) {
           </p>
         </div>
 
-        {/* 🔹 카드 3개: 클릭도 가능 + 숫자는 currentRecord 기준으로 변경 */}
+        {/* 🔹 인바디 스타일 카드 3개 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <MetricCard
             label="체중 (kg)"
             value={formatNumber(currentRecord?.weight, 1)}
             unit="kg"
             active={selectedMetric === "weight"}
+            status={weightStatus}
             onClick={() => setSelectedMetric("weight")}
           />
           <MetricCard
@@ -140,6 +155,7 @@ export default function ActivityChart({ bodyRecords }) {
             value={formatNumber(currentRecord?.muscle, 1)}
             unit="kg"
             active={selectedMetric === "muscle"}
+            status={muscleStatus}
             onClick={() => setSelectedMetric("muscle")}
           />
           <MetricCard
@@ -147,12 +163,13 @@ export default function ActivityChart({ bodyRecords }) {
             value={formatNumber(currentRecord?.fat, 1)}
             unit="%"
             active={selectedMetric === "fat"}
+            status={fatStatus}
             onClick={() => setSelectedMetric("fat")}
           />
         </div>
 
         {/* 🔹 라인 차트 */}
-        <div className="w-full h-64 sm:h-72 chart-container">
+        <div className="w-full h-64 sm:h-72 min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={sortedData}
@@ -164,12 +181,11 @@ export default function ActivityChart({ bodyRecords }) {
                 dataKey="date"
                 tick={{ fontSize: 11, fill: "#6B7280" }}
                 tickMargin={8}
-
               />
               <YAxis
+                domain={[minY, maxY]}
                 tick={{ fontSize: 11, fill: "#6B7280" }}
                 tickMargin={8}
-                domain={[minY, maxY]} // ⬅️ 최소/최대 적용
               />
               <Tooltip
                 formatter={(value) =>
@@ -214,8 +230,25 @@ export default function ActivityChart({ bodyRecords }) {
   );
 }
 
-/** InBody 스타일 상단 카드 (클릭 가능) */
-function MetricCard({ label, value, unit, active, onClick }) {
+/** 인바디 스타일 상단 카드 */
+function MetricCard({
+  label,
+  value,
+  unit,
+  active,
+  status = "normal",
+  onClick,
+}) {
+  const statusLabel =
+    status === "high" ? "표준 이상" : status === "low" ? "표준 이하" : "표준";
+
+  const statusColor =
+    status === "high"
+      ? "bg-red-500"
+      : status === "low"
+      ? "bg-slate-400"
+      : "bg-emerald-500";
+
   return (
     <button
       type="button"
@@ -234,10 +267,12 @@ function MetricCard({ label, value, unit, active, onClick }) {
       <div
         className={
           "mt-3 inline-flex items-center justify-center rounded-full px-3 py-1 " +
-          (active ? "bg-emerald-500" : "bg-emerald-500/90")
+          statusColor
         }
       >
-        <span className="text-[11px] font-semibold text-white">표준</span>
+        <span className="text-[11px] font-semibold text-white">
+          {statusLabel}
+        </span>
       </div>
     </button>
   );

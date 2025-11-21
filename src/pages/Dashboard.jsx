@@ -10,6 +10,7 @@ export default function Dashboard({
   exerciseRecords,
   goals,
   onSaveGoals,
+  profile,
 }) {
   const latestBody =
     bodyRecords && bodyRecords.length > 0
@@ -44,7 +45,7 @@ export default function Dashboard({
         <ActivityHeader latestBody={latestBody} />
 
         {/* 2. 체성분 변화 추이 그래프 */}
-        <ActivityChart bodyRecords={bodyRecords} />
+        <ActivityChart bodyRecords={bodyRecords}  profile={profile}/>
 
         {/* 3. 최근 운동기록 */}
         <ActivityExerciseList exercises={exerciseRecords} />
