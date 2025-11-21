@@ -1,7 +1,7 @@
 // src/components/MyActivity/ActivityExerciseList.jsx
 import { useMemo, useState, useEffect, useRef } from "react";
 
-export default function ActivityExerciseList({ exercises }) {
+export default function ActivityExerciseList({ exercises, onOpenRecordModal }) {
   const safeExercises = exercises || [];
   const hasData = safeExercises.length > 0;
 
@@ -13,10 +13,10 @@ export default function ActivityExerciseList({ exercises }) {
   }, [safeExercises, hasData]);
 
   const [selectedDate, setSelectedDate] = useState(() => sortedDates[0] ?? "");
-  const [open, setOpen] = useState(false); // 드롭다운 열림/닫힘 상태
+  const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // 날짜 목록이 바뀌면 자동으로 최신 날짜 선택
+  // 날짜 목록이 바뀌면 자동 최신 날짜 선택
   useEffect(() => {
     if (sortedDates.length > 0) {
       setSelectedDate(sortedDates[0]);
@@ -25,7 +25,7 @@ export default function ActivityExerciseList({ exercises }) {
     }
   }, [sortedDates]);
 
-  // 2️⃣ 선택된 날짜의 운동만 필터링
+  // 2️⃣ 선택된 날짜 운동만 필터링
   const dailyExercises = useMemo(() => {
     if (!selectedDate) return [];
     return safeExercises.filter((e) => e.date === selectedDate);
@@ -34,21 +34,15 @@ export default function ActivityExerciseList({ exercises }) {
   // 3️⃣ 바깥 클릭 시 드롭다운 닫기
   useEffect(() => {
     if (!open) return;
-
     const handleClickOutside = (e) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  // ---------- 렌더링 ----------
   return (
     <section className="bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
       <div className="bg-white rounded-3xl border border-sky-100 px-5 py-4 sm:px-8 sm:py-6 shadow-sm">
@@ -59,12 +53,8 @@ export default function ActivityExerciseList({ exercises }) {
           </h2>
 
           {hasData && (
-            <div
-              ref={dropdownRef}
-              className="relative text-xs sm:text-sm"
-            >
+            <div ref={dropdownRef} className="relative text-xs sm:text-sm">
               <span className="mr-2 text-slate-500">날짜 선택</span>
-              {/* 드롭다운 버튼 */}
               <button
                 type="button"
                 onClick={() => setOpen((prev) => !prev)}
@@ -98,7 +88,6 @@ export default function ActivityExerciseList({ exercises }) {
                 </svg>
               </button>
 
-              {/* 펼쳐지는 리스트 */}
               {open && (
                 <div
                   className="
@@ -124,9 +113,11 @@ export default function ActivityExerciseList({ exercises }) {
                         }}
                         className={`
                           w-full text-left px-3 py-2 text-xs
-                          ${active
-                            ? "bg-sky-50 text-sky-600 font-semibold"
-                            : "text-slate-600 hover:bg-sky-50"}
+                          ${
+                            active
+                              ? "bg-sky-50 text-sky-600 font-semibold"
+                              : "text-slate-600 hover:bg-sky-50"
+                          }
                         `}
                       >
                         {d}
@@ -161,7 +152,6 @@ export default function ActivityExerciseList({ exercises }) {
                 key={ex.id}
                 className="flex items-center justify-between gap-3 px-4 py-3 bg-sky-50 rounded-2xl shadow-inner"
               >
-                {/* 왼쪽: 운동명 + 시간/칼로리 */}
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sky-500 text-lg">🏋️</span>
@@ -181,7 +171,6 @@ export default function ActivityExerciseList({ exercises }) {
                   </div>
                 </div>
 
-                {/* 오른쪽: 날짜 */}
                 <div className="flex items-center gap-1 text-xs sm:text-sm text-sky-500">
                   <span className="text-base">📅</span>
                   <span className="font-medium">{ex.date}</span>
@@ -190,6 +179,17 @@ export default function ActivityExerciseList({ exercises }) {
             ))}
           </ul>
         )}
+
+        {/* 🔹 항상 보이는 '운동 기록 관리' 버튼 */}
+        <div className="flex justify-end mt-4">
+          <button
+            type="button"
+            onClick={onOpenRecordModal}
+            className="px-4 py-2 text-xs sm:text-sm rounded-full bg-sky-500 text-white font-medium shadow hover:bg-sky-600 active:scale-[0.98] transition"
+          >
+            운동 기록 관리
+          </button>
+        </div>
       </div>
     </section>
   );

@@ -12,6 +12,7 @@ export default function Dashboard({
   onSaveGoals,
   profile,
   onOpenBodyModal,  // ✅ App에서 내려오는 콜백
+  onOpenExerciseModal,
 }) {
   const latestBody =
     bodyRecords && bodyRecords.length > 0
@@ -52,7 +53,9 @@ export default function Dashboard({
         <ActivityChart bodyRecords={bodyRecords} profile={profile} />
 
         {/* 3. 최근 운동기록 */}
-        <ActivityExerciseList exercises={exerciseRecords} />
+        <ActivityExerciseList 
+        exercises={exerciseRecords} 
+        onOpenRecordModal={onOpenExerciseModal}/>
 
         {/* 4. (옵션) 체성분 / 운동 기록 관리 폼들 */}
         {/* BodyForm, ExerciseForm, 테이블 등 */}

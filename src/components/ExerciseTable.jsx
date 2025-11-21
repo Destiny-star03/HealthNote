@@ -1,70 +1,70 @@
 // src/components/ExerciseTable.jsx
 export default function ExerciseTable({ records, onDelete }) {
-  if (!records.length)
+  if (!records || records.length === 0) {
     return (
-      <div className="bg-card border border-border rounded-2xl shadow-sm p-4 text-center text-muted-foreground">
-        운동 기록이 없습니다.
+      <div className="text-xs text-slate-400">
+        아직 저장된 운동 기록이 없습니다.
       </div>
     );
+  }
 
-  const grouped = records.reduce((acc, r) => {
-    if (!acc[r.date]) acc[r.date] = [];
-    acc[r.date].push(r);
-    return acc;
-  }, {});
-
-  const sortedDates = Object.keys(grouped).sort(
-    (a, b) => new Date(b) - new Date(a)
-  );
+  // 날짜 내림차순 → 같은 날짜는 입력 순서대로
+  const sorted = [...records].sort((a, b) => {
+    if (a.date === b.date) return b.id - a.id;
+    return new Date(b.date) - new Date(a.date);
+  });
 
   return (
-    <div className="mt-4 space-y-4">
-      {sortedDates.map((date) => {
-        const dayRecords = grouped[date];
-        return (
-          <div
-            key={date}
-            className="bg-card border border-border rounded-2xl shadow-sm p-4"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold">{date}</h3>
-              <span className="text-xs text-muted-foreground">
-                {dayRecords.length}개 운동
-              </span>
-            </div>
-
-            <table className="w-full text-center text-sm border-t border-border">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="p-2 border border-border">운동명</th>
-                  <th className="p-2 border border-border">시간(분)</th>
-                  <th className="p-2 border border-border">칼로리</th>
-                  <th className="p-2 border border-border">삭제</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dayRecords.map((r) => (
-                  <tr key={r.id} className="hover:bg-muted/60">
-                    <td className="p-2 border border-border">{r.exercise}</td>
-                    <td className="p-2 border border-border">{r.duration}</td>
-                    <td className="p-2 border border-border text-emerald-600 font-semibold">
-                      {r.calories}
-                    </td>
-                    <td className="p-2 border border-border">
-                      <button
-                        className="px-3 py-1 rounded bg-destructive text-destructive-foreground text-xs"
-                        onClick={() => onDelete(r.id)}
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+      {sorted.map((r) => (
+        <div
+          key={r.id}
+          className="
+            flex items-center justify-between gap-3
+            rounded-2xl
+            bg-sky-50
+            px-3 py-2.5
+            text-xs
+            shadow-inner
+          "
+        >
+          {/* 왼쪽: 날짜 + 내용 */}
+          <div className="flex flex-col">
+            <span className="text-[11px] text-slate-500 mb-0.5">
+              {r.date}
+            </span>
+            <span className="text-[13px] text-slate-700 font-medium">
+              {r.exercise}
+            </span>
+            <span className="text-[11px] text-slate-500 mt-0.5">
+              {r.duration}분 · {r.calories}kcal
+            </span>
           </div>
-        );
-      })}
+
+          {/* 오른쪽: 삭제 버튼 */}
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm("이 운동 기록을 삭제할까요?")) {
+                onDelete(r.id);
+              }
+            }}
+            className="
+              flex items-center justify-center
+              w-7 h-7
+              rounded-full
+              bg-red-50
+              text-red-500
+              text-xs
+              border border-red-100
+              hover:bg-red-100
+              transition
+            "
+          >
+            🗑
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

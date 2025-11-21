@@ -8,6 +8,7 @@ import ExerciseForm from "../components/ExerciseForm";
 import ExerciseTable from "../components/ExerciseTable";
 import ProfilePage from "../components/common/ProfileModal"; // ✅ 프로필 모달
 import BodyRecordModal from "../components/common/BodyRecordModal"; // ✅ 새 모달
+import ExerciseRecordModal from "../components/common/ExerciseRecordModal";
 
 export default function App() {
   const [bodyRecords, setBodyRecords] = useState([]);
@@ -22,6 +23,7 @@ export default function App() {
 
   // 🔹 체성분 기록 관리 모달 상태
   const [isBodyModalOpen, setIsBodyModalOpen] = useState(false);
+  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
 
   const handleSaveGoals = (newGoals) => {
     const cleanGoals = {
@@ -132,6 +134,7 @@ export default function App() {
           onSaveGoals={handleSaveGoals}
           profile={profile}
           onOpenBodyModal={() => setIsBodyModalOpen(true)} // ✅ 헤더의 "기록 관리" 버튼에서 호출
+          onOpenExerciseModal={() => setIsExerciseModalOpen(true)}
         />
 
         {/* 아래의 기존 체성분 관리 섹션은 모달로 옮겼기 때문에
@@ -169,27 +172,7 @@ export default function App() {
           </section>
         )}
 
-        {/* 2. 운동 기록 관리 */}
-        <section className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 space-y-4 pb-10">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold">🏋️ 운동 기록 관리</h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                기록 날짜를 기준으로 여러 운동을 한 번에 추가하고, 날짜별로 묶어서 관리합니다.
-              </p>
-            </div>
-            <span className="hidden sm:inline-block text-xs text-primary">
-              여러 종목 동시 기록
-            </span>
-          </div>
-
-          <ExerciseForm onAddExercises={handleAddExercises} />
-
-          <ExerciseTable
-            records={exerciseRecords}
-            onDelete={handleDeleteExercise}
-          />
-        </section>
+  
       </main>
 
       {/* 🔹 체성분 기록 관리 모달 */}
@@ -214,6 +197,15 @@ export default function App() {
           initialProfile={profile}
           onClose={() => setIsProfileOpen(false)}
           onSave={handleSaveProfile}
+        />
+      )}
+
+      {isExerciseModalOpen && (
+        <ExerciseRecordModal
+          exerciseRecords={exerciseRecords}
+          onAddExercises={handleAddExercises}
+          onDeleteExercise={handleDeleteExercise}
+          onClose={() => setIsExerciseModalOpen(false)}
         />
       )}
     </div>
