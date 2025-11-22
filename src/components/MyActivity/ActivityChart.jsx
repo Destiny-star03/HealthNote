@@ -38,20 +38,55 @@ const getStatusColorClass = (status) => {
   return "bg-emerald-500";
 };
 
-// Y축 도메인 계산
-const calcDomain = (data, metricKey) => {
-  const values = data
-    .map((d) => Number(d[metricKey]))
-    .filter((v) => !isNaN(v));
+// 문자열 / %가 섞여 있어도 안전하게 숫자로 변환
+const parseMetricValue = (raw, metricKey) => {
+  if (raw === null || raw === undefined) return NaN;
+  let s = String(raw).trim();
+  // "20.2%" 같은 경우 처리
+  if (metricKey === "fat" && s.endsWith("%")) {
+    s = s.slice(0, -1);
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? n : NaN;
+};
 
-  if (values.length === 0) return { minY: 0, maxY: 10 };
+// Y축 도메인 계산 (이상치 방어)
+const calcDomain = (data, metricKey) => {
+  const allValues = data
+    .map((d) => parseMetricValue(d[metricKey], metricKey))
+    .filter((v) => !Number.isNaN(v));
+
+  if (allValues.length === 0) return { minY: 0, maxY: 10 };
+
+  let values = allValues;
+
+  if (metricKey === "fat") {
+    // 체지방률: 0~60% 사이 값만 도메인 계산에 사용
+    const filtered = allValues.filter((v) => v >= 0 && v <= 60);
+    if (filtered.length > 0) {
+      values = filtered;
+    }
+  }
 
   const rawMin = Math.min(...values);
   const rawMax = Math.max(...values);
-  const padding = 3;
 
-  const minY = Math.max(0, rawMin - padding);
-  const maxY = rawMax + padding;
+  const padding = metricKey === "fat" ? 2 : 3;
+
+  let minY = Math.max(0, rawMin - padding);
+  let maxY = rawMax + padding;
+
+  // 체지방률은 최종 도메인을 0~60 사이로 강제
+  if (metricKey === "fat") {
+    minY = 0;
+    maxY = Math.min(Math.max(maxY, 10), 60);
+  }
+
+  // min == max 인 경우 살짝 벌려주기 (축가 99999999 비슷하게 이상해지는 것 방지)
+  if (minY === maxY) {
+    minY = Math.max(0, minY - 1);
+    maxY = maxY + 1;
+  }
 
   return { minY, maxY };
 };
@@ -60,10 +95,8 @@ const calcDomain = (data, metricKey) => {
 // 메인 컴포넌트
 // ───────────────────────────
 export default function ActivityChart({ bodyRecords, profile }) {
-  // ✅ 훅보다 먼저 쓰이는 일반 변수/값
   const hasData = Array.isArray(bodyRecords) && bodyRecords.length > 0;
 
-  // ✅ 훅은 항상 호출되게
   const sortedData = useMemo(
     () =>
       hasData
@@ -85,7 +118,7 @@ export default function ActivityChart({ bodyRecords, profile }) {
   const metric = METRICS[selectedMetric];
   const activeValue = currentRecord ? currentRecord[metric.key] : null;
 
-  // ✅ 선택된 metric 기준 Y축 범위
+  // 선택된 metric 기준 Y축 범위
   const { minY, maxY } = useMemo(
     () => calcDomain(sortedData, metric.key),
     [sortedData, metric.key]
@@ -107,7 +140,6 @@ export default function ActivityChart({ bodyRecords, profile }) {
       ? getMetricStatus("fat", currentRecord, profile)
       : "normal";
 
-  // 🔹 데이터 없을 때 화면 (❗️이제는 훅 호출 이후에 위치)
   if (!hasData || !latestRecord) {
     return (
       <section className="w-full bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm text-center text-sm text-slate-500">
@@ -116,7 +148,6 @@ export default function ActivityChart({ bodyRecords, profile }) {
     );
   }
 
-  // 그래프 클릭 → 해당 날짜 데이터 선택
   const handleChartClick = (state) => {
     if (!state) return;
 
@@ -166,7 +197,6 @@ export default function ActivityChart({ bodyRecords, profile }) {
           <MetricCard
             label="체중 (kg)"
             value={formatNumber(currentRecord?.weight, 1)}
-            unit="kg"
             active={selectedMetric === "weight"}
             status={weightStatus}
             onClick={() => setSelectedMetric("weight")}
@@ -174,7 +204,6 @@ export default function ActivityChart({ bodyRecords, profile }) {
           <MetricCard
             label="골격근량 (kg)"
             value={formatNumber(currentRecord?.muscle, 1)}
-            unit="kg"
             active={selectedMetric === "muscle"}
             status={muscleStatus}
             onClick={() => setSelectedMetric("muscle")}
@@ -182,7 +211,6 @@ export default function ActivityChart({ bodyRecords, profile }) {
           <MetricCard
             label="체지방률 (%)"
             value={formatNumber(currentRecord?.fat, 1)}
-            unit="%"
             active={selectedMetric === "fat"}
             status={fatStatus}
             onClick={() => setSelectedMetric("fat")}
@@ -207,6 +235,9 @@ export default function ActivityChart({ bodyRecords, profile }) {
                 domain={[minY, maxY]}
                 tick={{ fontSize: 11, fill: "#6B7280" }}
                 tickMargin={8}
+                tickFormatter={(v) =>
+                  Number.isFinite(v) ? v.toFixed(1) : v
+                }
               />
               <Tooltip
                 formatter={(value) =>
@@ -250,13 +281,7 @@ export default function ActivityChart({ bodyRecords, profile }) {
 }
 
 /** 인바디 스타일 상단 카드 */
-function MetricCard({
-  label,
-  value,
-  active,
-  status = "normal",
-  onClick,
-}) {
+function MetricCard({ label, value, active, status = "normal", onClick }) {
   const statusLabel = getStatusLabel(status);
   const statusColorClass = getStatusColorClass(status);
 
