@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 
 export default function BodyForm({
-  bodyRecords,
   onAddBody,
   onUpdateBody,
   editingBody,
