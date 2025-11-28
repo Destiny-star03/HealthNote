@@ -84,7 +84,7 @@ export default function Dashboard({
       <aside
         className="
           w-full xl:w-80
-          xl:sticky xl:top-6
+          xl:sticky xl:top-20
           xl:self-start
           space-y-6
         "

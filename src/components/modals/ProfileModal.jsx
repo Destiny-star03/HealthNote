@@ -46,11 +46,20 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
     }
   };
 
+  const checkOnclose = () =>  {
+    const { age, height, sex } = form;
+
+    if (!age || !height || !sex) {
+      alert("나이, 키, 성별을 모두 입력해 주세요.");
+      return;
+    }
+    onClose();
+  }
+
   return (
     // 🔹 오버레이: 밝게 + 살짝 블러
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 backdrop-blur-sm"
-      onClick={handleOverlayClick}
     >
       <div className="relative z-10 w-full max-w-md mx-4">
         {/* 🔹 카드: 파스텔 하늘색 + 검은 테두리 + 반투명 */}
@@ -65,7 +74,7 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={checkOnclose}
               className="text-slate-400 hover:text-slate-600"
             >
               ✕
@@ -107,7 +116,7 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
                 onChange={handleChange}
                 className="rounded-xl border border-border px-3 py-2 bg-white shadow-inner
                            focus:outline-none focus:ring-2 focus:ring-sky-300"
-                placeholder="예: 169.7"
+                placeholder="예:175"
                 min={0}
                 step="0.1"
               />
@@ -130,14 +139,6 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
 
             {/* 버튼 영역 */}
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-full text-xs font-medium
-                           text-slate-500 bg-slate-100/90 hover:bg-slate-200"
-              >
-                취소
-              </button>
               <button
                 type="submit"
                 className="px-5 py-2 rounded-full text-xs font-medium

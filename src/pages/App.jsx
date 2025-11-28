@@ -6,7 +6,7 @@ import ExerciseRecordModal from "../components/modals/ExerciseRecordModal";
 import useHealthNoteData from "../hooks/useHealthNoteData";
 
 export default function App() {
-  localStorage.clear();
+  // localStorage.clear();
   const {
     // ===== 상태 =====
     bodyRecords,

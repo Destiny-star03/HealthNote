@@ -149,6 +149,7 @@ export default function ActivityChart({ bodyRecords, profile }) {
   }
 
   const handleChartClick = (state) => {
+    console.log(sortedData, state);
     if (!state) return;
 
     const payload = state.activePayload?.[0]?.payload;
