@@ -203,7 +203,7 @@ function GoalModal({
               value={weightInput}
               onChange={(e) => setWeightInput(e.target.value)}
               className="px-3 py-2.5 rounded-lg border border-sky-200 bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-300 text-sm"
-              placeholder="예: 62.0"
+              placeholder="예: 70.0"
             />
           </div>
 
@@ -215,7 +215,7 @@ function GoalModal({
               value={muscleInput}
               onChange={(e) => setMuscleInput(e.target.value)}
               className="px-3 py-2.5 rounded-lg border border-sky-200 bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-300 text-sm"
-              placeholder="예: 32.0"
+              placeholder="예: 34.0"
             />
           </div>
         </div>

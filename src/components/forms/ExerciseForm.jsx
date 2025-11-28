@@ -1,6 +1,19 @@
 // src/components/ExerciseForm.jsx
 import { useState } from "react";
 
+const sanitizeDateInput = (value) => {
+  const digits = value.replace(/[^0-9]/g, "").slice(0, 8); // YYYYMMDD only
+  const year = digits.slice(0, 4);
+  const month = digits.slice(4, 6);
+  const day = digits.slice(6, 8);
+
+  let next = year;
+  if (month) next += `-${month}`;
+  if (day) next += `-${day}`;
+
+  return next;
+};
+
 export default function ExerciseForm({ onAddExercises }) {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -44,7 +57,7 @@ export default function ExerciseForm({ onAddExercises }) {
         <input
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => setDate(sanitizeDateInput(e.target.value))}
           className="
             w-full rounded-full
             border border-sky-200

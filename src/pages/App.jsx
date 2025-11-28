@@ -6,6 +6,7 @@ import ExerciseRecordModal from "../components/modals/ExerciseRecordModal";
 import useHealthNoteData from "../hooks/useHealthNoteData";
 
 export default function App() {
+  localStorage.clear();
   const {
     // ===== 상태 =====
     bodyRecords,
@@ -37,6 +38,7 @@ export default function App() {
   } = useHealthNoteData();
 
   return (
+    
     <div className="min-h-screen bg-background text-foreground">
       {/* 상단 헤더 */}
       <Header onOpenProfile={openProfileModal} />

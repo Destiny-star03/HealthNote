@@ -1,12 +1,24 @@
 // src/components/BodyForm.jsx
 import { useEffect, useState } from "react";
 
+const sanitizeDateInput = (value) => {
+  const digits = value.replace(/[^0-9]/g, "").slice(0, 8); // YYYYMMDD only
+  const year = digits.slice(0, 4);
+  const month = digits.slice(4, 6);
+  const day = digits.slice(6, 8);
+
+  let next = year;
+  if (month) next += `-${month}`;
+  if (day) next += `-${day}`;
+
+  return next;
+};
+
 export default function BodyForm({
   onAddBody,
   onUpdateBody,
   editingBody,
   cancelEdit,
-  // 선택: 폼 옆 휴지통 버튼으로도 삭제하고 싶을 때 넘겨 써도 됨
   onDeleteBody,
 }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -34,12 +46,45 @@ export default function BodyForm({
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // ✅ 1) 세 값 모두 필수
+    const anyEmpty =
+      weight === "" ||
+      weight === null ||
+      muscle === "" ||
+      muscle === null ||
+      fat === "" ||
+      fat === null;
+
+    if (anyEmpty) {
+      alert("체중, 근육량, 체지방률을 모두 입력해주세요.");
+      return;
+    }
+
+    // ✅ 2) 숫자 변환 + 유효성 검사
+    const wNum = Number(weight);
+    const mNum = Number(muscle);
+    const fNum = Number(fat);
+
+    if (
+      Number.isNaN(wNum) ||
+      Number.isNaN(mNum) ||
+      Number.isNaN(fNum)
+    ) {
+      alert("숫자를 올바르게 입력해주세요.");
+      return;
+    }
+
+    if (wNum <= 0 || mNum <= 0 || fNum <= 0) {
+      alert("0보다 큰 값만 입력할 수 있습니다.");
+      return;
+    }
+
     const record = {
       id: editingBody ? editingBody.id : Date.now(),
       date,
-      weight: weight !== "" ? Number(weight) : null,
-      muscle: muscle !== "" ? Number(muscle) : null,
-      fat: fat !== "" ? Number(fat) : null,
+      weight: wNum,
+      muscle: mNum,
+      fat: fNum,
     };
 
     if (editingBody) {
@@ -48,6 +93,7 @@ export default function BodyForm({
       onAddBody && onAddBody(record);
     }
 
+    // 새로 추가할 때만 초기화
     if (!editingBody) {
       setWeight("");
       setMuscle("");
@@ -74,7 +120,7 @@ export default function BodyForm({
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => setDate(sanitizeDateInput(e.target.value))}
             className="
               w-full rounded-3xl border border-sky-200 bg-rose-50/60
               px-4 py-2.5 text-sm text-slate-800
@@ -116,12 +162,10 @@ export default function BodyForm({
             hover:bg-sky-600 active:scale-[0.99] transition
           "
         >
-          {/* 아이콘 */}
           <span className="text-base">💾</span>
           <span>{editingBody ? "수정" : "추가"}</span>
         </button>
 
-        {/* 휴지통 버튼 (편집 모드 + onDeleteBody 있을 때만 의미 있음) */}
         {editingBody && (
           <button
             type="button"

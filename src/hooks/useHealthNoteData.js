@@ -9,7 +9,22 @@ const STORAGE_KEYS = {
   profile: "healthnote_profile",
 };
 
-const DEFAULT_GOALS = { weight: 62, muscle: 32 };
+const DEFAULT_GOALS = { weight: 0, muscle: 0 };
+
+// 🔹 프로필 유효성 검사: 나이, 키, 성별이 다 채워져 있는지
+function isValidProfile(profile) {
+  if (!profile) return false;
+  const { age, height, sex } = profile;
+  return (
+    age !== null &&
+    age !== undefined &&
+    age !== "" &&
+    height !== null &&
+    height !== undefined &&
+    height !== "" &&
+    !!sex
+  );
+}
 
 export default function useHealthNoteData() {
   const [bodyRecords, setBodyRecords] = useState([]);
@@ -41,7 +56,12 @@ export default function useHealthNoteData() {
       setBodyRecords(body);
       setExerciseRecords(exercise);
       setGoals(goalData);
-      if (profileData) setProfile(profileData);
+      setProfile(profileData);
+
+      // ✅ 프로필이 없거나 값이 비어 있으면 첫 로딩 시 프로필 모달 자동 오픈
+      if (!isValidProfile(profileData)) {
+        setIsProfileOpen(true);
+      }
     } catch (e) {
       console.error("HealthNote 초기 데이터 로딩 오류:", e);
     }
@@ -85,7 +105,7 @@ export default function useHealthNoteData() {
   const saveProfile = (data) => {
     setProfile(data);
     localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(data));
-    setIsProfileOpen(false);
+    setIsProfileOpen(false); // 저장 후 닫기
   };
 
   // ===== 체성분 CRUD =====
