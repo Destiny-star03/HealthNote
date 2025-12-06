@@ -1,5 +1,5 @@
 // src/components/ExerciseTable.jsx
-export default function ExerciseTable({ records, onDelete }) {
+export default function ExerciseTable({ records, onDelete, onEdit }) {
   if (!records || records.length === 0) {
     return (
       <div className="text-xs text-slate-400">
@@ -28,8 +28,17 @@ export default function ExerciseTable({ records, onDelete }) {
             shadow-inner
           "
         >
-          {/* 왼쪽: 날짜 + 내용 */}
-          <div className="flex flex-col">
+          {/* 🔹 왼쪽: 기록 선택 영역 (클릭 시 수정 모드 진입) */}
+          <button
+            type="button"
+            onClick={() => onEdit && onEdit(r)}
+            className="
+              flex flex-col flex-1 text-left
+              rounded-xl px-1 py-0.5
+              hover:bg-sky-100/80
+              transition
+            "
+          >
             <span className="text-[11px] text-slate-500 mb-0.5">
               {r.date}
             </span>
@@ -39,16 +48,12 @@ export default function ExerciseTable({ records, onDelete }) {
             <span className="text-[11px] text-slate-500 mt-0.5">
               {r.duration}분 · {r.calories}kcal
             </span>
-          </div>
+          </button>
 
-          {/* 오른쪽: 삭제 버튼 */}
+          {/* 🔹 오른쪽: 삭제 버튼 */}
           <button
             type="button"
-            onClick={() => {
-              if (confirm("이 운동 기록을 삭제할까요?")) {
-                onDelete(r.id);
-              }
-            }}
+            onClick={() => { onDelete && onDelete(r.id);}}
             className="
               flex items-center justify-center
               w-7 h-7

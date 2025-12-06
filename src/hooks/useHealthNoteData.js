@@ -32,6 +32,7 @@ export default function useHealthNoteData() {
   const [goals, setGoals] = useState(DEFAULT_GOALS);
 
   const [editingBody, setEditingBody] = useState(null);
+  const [editingExercise, setEditingExercise] = useState(null);
 
   // 프로필 & 모달 상태
   const [profile, setProfile] = useState(null);
@@ -130,9 +131,17 @@ export default function useHealthNoteData() {
     updateExerciseRecords((prev) => [...prev, ...newRecords]);
   };
 
+  const updateExercise = (updatedRecord) => {
+    updateExerciseRecords((prev) =>
+      prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r))
+    );
+    setEditingExercise(null); // 수정 끝나면 편집 상태 해제
+  };
+
   const deleteExercise = (id) => {
     if (!confirm("해당 운동 기록을 삭제할까요?")) return;
     updateExerciseRecords((prev) => prev.filter((r) => r.id !== id));
+    setEditingExercise((current) => current && current.id === id ? null : current);
   };
 
   // ===== 모달 제어 =====
@@ -140,13 +149,10 @@ export default function useHealthNoteData() {
   const closeProfileModal = () => setIsProfileOpen(false);
 
   const openBodyModal = () => setIsBodyModalOpen(true);
-  const closeBodyModal = () => {
-    setIsBodyModalOpen(false);
-    setEditingBody(null);
-  };
+  const closeBodyModal = () => { setIsBodyModalOpen(false); setEditingBody(null); };
 
   const openExerciseModal = () => setIsExerciseModalOpen(true);
-  const closeExerciseModal = () => setIsExerciseModalOpen(false);
+  const closeExerciseModal = () => { setIsExerciseModalOpen(false); setEditingExercise(null); };
 
   return {
     // 상태
@@ -156,6 +162,8 @@ export default function useHealthNoteData() {
     profile,
     editingBody,
     setEditingBody,
+    editingExercise,
+    setEditingExercise,
 
     // CRUD
     saveGoals,
@@ -164,6 +172,7 @@ export default function useHealthNoteData() {
     updateBody,
     deleteBody,
     addExercises,
+    updateExercise,
     deleteExercise,
 
     // 모달 상태 & 제어

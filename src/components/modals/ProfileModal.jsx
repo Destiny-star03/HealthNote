@@ -9,6 +9,31 @@ function createInitialForm(initialProfile) {
   };
 }
 
+// 폼 유효성 검사 함수
+function validateProfile(form) {
+  const { age, height, sex } = form;
+
+  if (!age || !height || !sex) {
+    alert("나이, 키, 성별을 모두 입력해 주세요.");
+    return false;
+  }
+
+  const ageNum = Number(age);
+  const heightNum = Number(height);
+
+  if (Number.isNaN(ageNum) || Number.isNaN(heightNum)) {
+    alert("나이와 키는 숫자로 입력해 주세요.");
+    return false;
+  }
+
+  if (ageNum <= 0 || heightNum <= 0) {
+    alert("나이와 키는 0보다 큰 값으로 입력해 주세요.");
+    return false;
+  }
+
+  return true;
+}
+
 export default function ProfilePage({ initialProfile, onClose, onSave }) {
   const [form, setForm] = useState(() => createInitialForm(initialProfile));
 
@@ -25,12 +50,9 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const { age, height, sex } = form;
+    if (!validateProfile(form)) return;
 
-    if (!age || !height || !sex) {
-      alert("나이, 키, 성별을 모두 입력해 주세요.");
-      return;
-    }
+    const { age, height, sex } = form;
 
     onSave({
       age: Number(age),
@@ -39,30 +61,21 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
     });
   };
 
-  // 오버레이 클릭 시 모달 닫기 (내용 클릭은 무시)
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+  // X 버튼으로 닫을 때도 "입력은 다 되어 있어야 한다"는 현재 의도 유지
+  const handleCheckedClose = () => {
+    if (!validateProfile(form)) return;
+    onClose();
   };
 
-  const checkOnclose = () =>  {
-    const { age, height, sex } = form;
-
-    if (!age || !height || !sex) {
-      alert("나이, 키, 성별을 모두 입력해 주세요.");
-      return;
-    }
-    onClose();
-  }
-
   return (
-    // 🔹 오버레이: 밝게 + 살짝 블러
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="프로필 정보 입력"
     >
       <div className="relative z-10 w-full max-w-md mx-4">
-        {/* 🔹 카드: 파스텔 하늘색 + 검은 테두리 + 반투명 */}
+        {/* 카드 */}
         <div className="rounded-3xl border border-black/40 shadow-xl bg-sky-50/80 backdrop-blur-md p-6">
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-4">
@@ -74,7 +87,7 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
             </div>
             <button
               type="button"
-              onClick={checkOnclose}
+              onClick={handleCheckedClose}
               className="text-slate-400 hover:text-slate-600"
             >
               ✕
@@ -116,7 +129,7 @@ export default function ProfilePage({ initialProfile, onClose, onSave }) {
                 onChange={handleChange}
                 className="rounded-xl border border-border px-3 py-2 bg-white shadow-inner
                            focus:outline-none focus:ring-2 focus:ring-sky-300"
-                placeholder="예:175"
+                placeholder="예: 175"
                 min={0}
                 step="0.1"
               />

@@ -11,7 +11,7 @@ export function getMetricStatus(metricKey, record, profile) {
   const h = height ? height / 100 : null; // m 단위
 
   if (metricKey === "weight") {
-    // ✅ BMI 기준
+    // BMI 기준
     // 표준 이하: BMI < 18.5
     // 표준:     18.5 ~ 24
     // 표준 이상: BMI > 24
@@ -24,7 +24,7 @@ export function getMetricStatus(metricKey, record, profile) {
   }
 
   if (metricKey === "fat") {
-    // ✅ 체지방률 기준 (성별 반영)
+    // 체지방률 기준 (성별 반영)
     const v = record.fat;
     if (v == null || isNaN(v)) return "normal";
 
@@ -45,7 +45,7 @@ export function getMetricStatus(metricKey, record, profile) {
   }
 
   if (metricKey === "muscle") {
-    // ✅ 근육량: 체중의 30~45%를 표준으로 가정
+    //근육량: 체중의 30~45%를 표준으로 가정
     const v = record.muscle;
     const w = record.weight;
 

@@ -5,8 +5,8 @@ import BodyRecordModal from "../components/modals/BodyRecordModal.jsx";
 import ExerciseRecordModal from "../components/modals/ExerciseRecordModal";
 import useHealthNoteData from "../hooks/useHealthNoteData";
 
-export default function App() {
   // localStorage.clear();
+export default function App() {
   const {
     // ===== 상태 =====
     bodyRecords,
@@ -15,6 +15,8 @@ export default function App() {
     profile,
     editingBody,
     setEditingBody,
+    editingExercise,       
+    setEditingExercise,     
 
     // ===== CRUD =====
     saveGoals,
@@ -23,6 +25,7 @@ export default function App() {
     updateBody,
     deleteBody,
     addExercises,
+    updateExercise,
     deleteExercise,
 
     // ===== 모달 상태 & 컨트롤 =====
@@ -38,7 +41,6 @@ export default function App() {
   } = useHealthNoteData();
 
   return (
-    
     <div className="min-h-screen bg-background text-foreground">
       {/* 상단 헤더 */}
       <Header onOpenProfile={openProfileModal} />
@@ -75,6 +77,10 @@ export default function App() {
           exerciseRecords={exerciseRecords}
           onAddExercises={addExercises}
           onDeleteExercise={deleteExercise}
+          editingExercise={editingExercise}                
+          onEditExercise={setEditingExercise}              
+          onUpdateExercise={updateExercise} 
+          onCancelEdit={() => setEditingExercise(null)}   
           onClose={closeExerciseModal}
         />
       )}

@@ -1,25 +1,11 @@
 // src/components/BodyForm.jsx
 import { useEffect, useState } from "react";
 
-const sanitizeDateInput = (value) => {
-  const digits = value.replace(/[^0-9]/g, "").slice(0, 8); // YYYYMMDD only
-  const year = digits.slice(0, 4);
-  const month = digits.slice(4, 6);
-  const day = digits.slice(6, 8);
-
-  let next = year;
-  if (month) next += `-${month}`;
-  if (day) next += `-${day}`;
-
-  return next;
-};
-
 export default function BodyForm({
   onAddBody,
   onUpdateBody,
   editingBody,
-  cancelEdit,
-  onDeleteBody,
+  cancelEdit,   // 편집 취소 콜백
 }) {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -28,7 +14,7 @@ export default function BodyForm({
   const [muscle, setMuscle] = useState("");
   const [fat, setFat] = useState("");
 
-  // 편집 모드일 때 값 채우기
+  // 편집 모드일 때 값 채우기 / 아니면 초기화
   useEffect(() => {
     if (editingBody) {
       setDate(editingBody.date);
@@ -46,35 +32,12 @@ export default function BodyForm({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // ✅ 1) 세 값 모두 필수
-    const anyEmpty =
-      weight === "" ||
-      weight === null ||
-      muscle === "" ||
-      muscle === null ||
-      fat === "" ||
-      fat === null;
-
-    if (anyEmpty) {
+    if (!weight || !muscle || !fat) {
       alert("체중, 근육량, 체지방률을 모두 입력해주세요.");
       return;
     }
 
-    // ✅ 2) 숫자 변환 + 유효성 검사
-    const wNum = Number(weight);
-    const mNum = Number(muscle);
-    const fNum = Number(fat);
-
-    if (
-      Number.isNaN(wNum) ||
-      Number.isNaN(mNum) ||
-      Number.isNaN(fNum)
-    ) {
-      alert("숫자를 올바르게 입력해주세요.");
-      return;
-    }
-
-    if (wNum <= 0 || mNum <= 0 || fNum <= 0) {
+    if (weight <= 0 || muscle <= 0 || fat <= 0) {
       alert("0보다 큰 값만 입력할 수 있습니다.");
       return;
     }
@@ -82,29 +45,24 @@ export default function BodyForm({
     const record = {
       id: editingBody ? editingBody.id : Date.now(),
       date,
-      weight: wNum,
-      muscle: mNum,
-      fat: fNum,
+      weight,
+      muscle,
+      fat,
     };
 
     if (editingBody) {
       onUpdateBody && onUpdateBody(record);
     } else {
       onAddBody && onAddBody(record);
-    }
-
-    // 새로 추가할 때만 초기화
-    if (!editingBody) {
+      // 새로 추가일 때만 입력값 초기화
       setWeight("");
       setMuscle("");
       setFat("");
     }
   };
 
-  const handleDeleteClick = () => {
-    if (!editingBody || !onDeleteBody) return;
-    if (!confirm("현재 선택된 체성분 기록을 삭제할까요?")) return;
-    onDeleteBody(editingBody.id);
+  const handleCancelEdit = () => {
+    // 단순히 편집만 종료 → editingBody를 null로 만드는 건 부모 역할
     cancelEdit && cancelEdit();
   };
 
@@ -120,7 +78,8 @@ export default function BodyForm({
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(sanitizeDateInput(e.target.value))}
+            max={today}
+            onChange={(e) => setDate(e.target.value)}
             className="
               w-full rounded-3xl border border-sky-200 bg-rose-50/60
               px-4 py-2.5 text-sm text-slate-800
@@ -169,16 +128,18 @@ export default function BodyForm({
         {editingBody && (
           <button
             type="button"
-            onClick={handleDeleteClick}
+            onClick={handleCancelEdit}
             className="
-              flex items-center justify-center
-              w-10 h-10 rounded-full
-              border border-rose-200 bg-rose-50
-              text-rose-500 hover:bg-rose-100 hover:border-rose-300
+              px-4 py-2.5
+              rounded-full
+              border border-slate-300
+              bg-white
+              text-xs font-medium text-slate-600
+              hover:bg-slate-50
               transition
             "
           >
-            🗑
+            취소
           </button>
         )}
       </div>
@@ -193,6 +154,7 @@ function Field({ label, value, onChange }) {
       <input
         type="number"
         step="0.1"
+        min="0"
         value={value}
         onChange={onChange}
         className="

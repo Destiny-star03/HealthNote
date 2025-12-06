@@ -7,23 +7,49 @@ export default function ExerciseRecordModal({
   onAddExercises,
   onDeleteExercise,
   onClose,
+
+  // 운동 수정 관련
+  editingExercise,
+  onEditExercise,
+  onUpdateExercise,
+  onCancelEdit,
 }) {
-  // 오버레이(배경) 클릭 시 닫기 – 카드 내용 클릭은 무시
+  // 오버레이(배경) 클릭 시 모달 닫기
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
+  // 카드 내부 클릭은 닫힘 방지
+  const handleCardClick = (e) => {
+    e.stopPropagation();
+  };
+
+  const handleEditRecord = (record) => {
+    onEditExercise && onEditExercise(record);
+  };
+
+  const handleDeleteRecord = (id) => {
+    onDeleteExercise && onDeleteExercise(id);
+  };
+
+  const handleCancelEdit = () => {
+    onCancelEdit && onCancelEdit();
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm"
       onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="운동 기록 관리"
     >
-      {/* 안쪽 카드 – 클릭해도 모달 안 닫히도록 */}
+      {/* 안쪽 카드 */}
       <div
         className="w-full max-w-lg mx-4 bg-sky-50 rounded-3xl shadow-[0_20px_60px_rgba(15,23,42,0.35)] border border-sky-100 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleCardClick}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-sky-100 bg-sky-50/80">
@@ -51,12 +77,17 @@ export default function ExerciseRecordModal({
 
         {/* 내용 영역 */}
         <div className="px-5 py-4 space-y-4 bg-sky-50">
-          {/* 🔹 위쪽: 입력 폼 */}
+          {/* 입력 폼 카드 */}
           <div className="bg-white rounded-2xl border border-sky-100 px-4 py-4 shadow-sm">
-            <ExerciseForm onAddExercises={onAddExercises} />
+            <ExerciseForm
+              onAddExercises={onAddExercises}
+              editingExercise={editingExercise}
+              onUpdateExercise={onUpdateExercise}
+              cancelEdit={handleCancelEdit}
+            />
           </div>
 
-          {/* 🔹 아래쪽: 최근 기록 리스트 영역 */}
+          {/* 최근 기록 리스트 영역 */}
           <div className="bg-white rounded-2xl border border-sky-100 px-4 py-3 shadow-sm">
             <p className="text-xs font-semibold text-slate-600 mb-2">
               최근 기록
@@ -65,7 +96,8 @@ export default function ExerciseRecordModal({
             <div className="max-h-64 overflow-y-auto pr-1">
               <ExerciseTable
                 records={exerciseRecords}
-                onDelete={onDeleteExercise}
+                onDelete={handleDeleteRecord}
+                onEdit={handleEditRecord}
               />
             </div>
           </div>

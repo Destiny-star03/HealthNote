@@ -19,7 +19,7 @@ export default function Dashboard({
       ? bodyRecords[bodyRecords.length - 1]
       : null;
 
-  /* 🔹 1. 최근 7일 운동만 필터링 */
+  /*1. 최근 7일 운동만 필터링 */
   const today = new Date();
   const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -33,7 +33,7 @@ export default function Dashboard({
     return diffDays >= 0 && diffDays < 7;
   });
 
-  /* 🔹 2. 최근 7일 기준 stats 계산 */
+  /*2. 최근 7일 기준 stats 계산 */
   const totalWorkouts = recentExercises.length;
   const totalCalories = recentExercises.reduce(
     (acc, cur) => acc + (Number(cur.calories) || 0),
@@ -62,7 +62,7 @@ export default function Dashboard({
         gap-6
       "
     >
-      {/* 🔹 왼쪽 메인 영역 (카드들이 위에서 아래로) */}
+      {/*왼쪽 메인 영역 (카드들이 위에서 아래로) */}
       <div className="flex-1 space-y-6">
         {/* 1. 최근 체성분 */}
         <ActivityHeader
@@ -80,7 +80,7 @@ export default function Dashboard({
         />
       </div>
 
-      {/* 🔹 오른쪽 사이드바 (최근 7일 요약 + 목표 달성률) */}
+      {/*오른쪽 사이드바 (최근 7일 요약 + 목표 달성률) */}
       <aside
         className="
           w-full xl:w-80

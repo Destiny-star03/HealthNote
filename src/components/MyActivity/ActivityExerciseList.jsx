@@ -1,20 +1,23 @@
 // src/components/MyActivity/ActivityExerciseList.jsx
 import { useMemo, useState, useEffect, useRef } from "react";
 
-export default function ActivityExerciseList({ exercises = [], onOpenRecordModal }) {
-  const hasData = exercises.length > 0;
+export default function ActivityExerciseList({
+  exercises = [],
+  onOpenRecordModal,
+}) {
+  const hasExercises = exercises.length > 0;
 
-  // 1️⃣ 날짜 목록 + 최신 날짜
+  // 1️⃣ 날짜 목록 (중복 제거 + 최신 날짜 순 정렬)
   const sortedDates = useMemo(() => {
-    if (!hasData) return [];
-    const dates = Array.from(new Set(exercises.map((e) => e.date)));
-    return dates.sort((a, b) => new Date(b) - new Date(a)); // 최신 날짜 우선
-  }, [exercises, hasData]);
+    if (!hasExercises) return [];
+    const uniqueDates = Array.from(new Set(exercises.map((e) => e.date)));
+    return uniqueDates.sort((a, b) => new Date(b) - new Date(a));
+  }, [exercises, hasExercises]);
 
   // 선택된 날짜
   const [selectedDate, setSelectedDate] = useState("");
 
-  // 날짜 목록이 바뀌면 자동 최신 날짜 선택
+  // 날짜 목록이 변경되면 자동으로 최신 날짜 선택
   useEffect(() => {
     if (sortedDates.length > 0) {
       setSelectedDate(sortedDates[0]);
@@ -23,11 +26,16 @@ export default function ActivityExerciseList({ exercises = [], onOpenRecordModal
     }
   }, [sortedDates]);
 
-  // 2️⃣ 선택된 날짜 운동만 필터링
+  // 2️⃣ 선택된 날짜의 운동만 필터링
   const dailyExercises = useMemo(() => {
     if (!selectedDate) return [];
     return exercises.filter((e) => e.date === selectedDate);
   }, [exercises, selectedDate]);
+
+  const hasDailyExercises = dailyExercises.length > 0;
+  const showEmptyAll = !hasExercises;
+  const showEmptyForDate = hasExercises && !hasDailyExercises;
+  const showList = hasDailyExercises;
 
   return (
     <section className="bg-sky-50 rounded-3xl border border-sky-100 p-4 sm:p-6 shadow-sm">
@@ -38,7 +46,7 @@ export default function ActivityExerciseList({ exercises = [], onOpenRecordModal
             최근 운동기록
           </h2>
 
-          {hasData && (
+          {hasExercises && (
             <DateDropdown
               dates={sortedDates}
               selectedDate={selectedDate}
@@ -47,22 +55,22 @@ export default function ActivityExerciseList({ exercises = [], onOpenRecordModal
           )}
         </div>
 
-        {/* 데이터 없을 때 */}
-        {!hasData && (
+        {/* 전체 데이터가 없을 때 */}
+        {showEmptyAll && (
           <div className="text-center text-sm text-slate-500 py-6">
             아직 운동 기록이 없습니다. 아래에서 운동을 기록해 보세요.
           </div>
         )}
 
-        {/* 선택된 날짜에 운동이 없을 때 */}
-        {hasData && dailyExercises.length === 0 && (
+        {/* 선택한 날짜에 운동이 없을 때 */}
+        {showEmptyForDate && (
           <div className="text-center text-sm text-slate-500 py-6">
             선택한 날짜({selectedDate})에는 운동 기록이 없습니다.
           </div>
         )}
 
         {/* 선택된 날짜의 운동 리스트 */}
-        {hasData && dailyExercises.length > 0 && (
+        {showList && (
           <ul className="space-y-3">
             {dailyExercises.map((ex) => (
               <li
@@ -99,7 +107,7 @@ export default function ActivityExerciseList({ exercises = [], onOpenRecordModal
           </ul>
         )}
 
-        {/* 🔹 항상 보이는 '운동 기록 관리' 버튼 */}
+        {/* 항상 보이는 '운동 기록 관리' 버튼 */}
         <div className="flex justify-end mt-4">
           <button
             type="button"
@@ -136,19 +144,31 @@ function DateDropdown({ dates, selectedDate, onSelectDate }) {
 
   if (!dates || dates.length === 0) return null;
 
+  const handleToggle = () => setOpen((prev) => !prev);
+
+  const handleSelect = (date) => {
+    onSelectDate(date);
+    setOpen(false);
+  };
+
   return (
-    <div ref={dropdownRef} className="relative text-xs sm:text-sm">
+    <div
+      ref={dropdownRef}
+      className="relative text-xs sm:text-sm"
+    >
       <span className="mr-2 text-slate-500">날짜 선택</span>
 
       {/* 드롭다운 버튼 */}
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={handleToggle}
         className={`inline-flex items-center justify-between px-3 py-1.5 rounded-full border ${
           open ? "border-sky-400" : "border-sky-300"
         } bg-white text-sky-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-300 transition min-w-[120px]`}
       >
-        <span className="mr-2">{selectedDate}</span>
+        <span className="mr-2">
+          {selectedDate || (dates.length > 0 ? dates[0] : "")}
+        </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className={`h-3 w-3 text-sky-400 transition-transform ${
@@ -156,6 +176,7 @@ function DateDropdown({ dates, selectedDate, onSelectDate }) {
           }`}
           viewBox="0 0 20 20"
           fill="currentColor"
+          aria-hidden="true"
         >
           <path
             fillRule="evenodd"
@@ -174,10 +195,7 @@ function DateDropdown({ dates, selectedDate, onSelectDate }) {
               <button
                 key={d}
                 type="button"
-                onClick={() => {
-                  onSelectDate(d);
-                  setOpen(false);
-                }}
+                onClick={() => handleSelect(d)}
                 className={`w-full text-left px-3 py-2 text-xs ${
                   active
                     ? "bg-sky-50 text-sky-600 font-semibold"

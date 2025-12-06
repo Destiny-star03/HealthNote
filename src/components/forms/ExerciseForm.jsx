@@ -1,49 +1,75 @@
 // src/components/ExerciseForm.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const sanitizeDateInput = (value) => {
-  const digits = value.replace(/[^0-9]/g, "").slice(0, 8); // YYYYMMDD only
-  const year = digits.slice(0, 4);
-  const month = digits.slice(4, 6);
-  const day = digits.slice(6, 8);
-
-  let next = year;
-  if (month) next += `-${month}`;
-  if (day) next += `-${day}`;
-
-  return next;
-};
-
-export default function ExerciseForm({ onAddExercises }) {
+export default function ExerciseForm({
+  onAddExercises,
+  editingExercise,      // 현재 수정 중인 운동 기록
+  onUpdateExercise,     // 운동 수정 콜백
+  cancelEdit,           // 수정 취소 콜백 (선택)
+}) {
   const today = new Date().toISOString().slice(0, 10);
+  const isEditMode = !!editingExercise;
 
   const [date, setDate] = useState(today);
   const [exercise, setExercise] = useState("");
   const [duration, setDuration] = useState("");
   const [calories, setCalories] = useState("");
 
+  const resetForm = () => {
+    setDate(today);
+    setExercise("");
+    setDuration("");
+    setCalories("");
+  };
+
+  useEffect(() => {
+    if (editingExercise) {
+      setDate(editingExercise.date);
+      setExercise(editingExercise.exercise ?? "");
+      setDuration(
+        editingExercise.duration !== undefined && editingExercise.duration !== null
+          ? String(editingExercise.duration)
+          : ""
+      );
+      setCalories(
+        editingExercise.calories !== undefined && editingExercise.calories !== null
+          ? String(editingExercise.calories)
+          : ""
+      );
+    } else {
+      resetForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingExercise, today]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!exercise.trim()) {
+    const trimmedExercise = exercise.trim();
+    if (!trimmedExercise) {
       alert("운동명을 입력해주세요.");
       return;
     }
 
-    const newRecord = {
-      id: Date.now(),
+    const record = {
+      id: isEditMode ? editingExercise.id : Date.now(),
       date,
-      exercise: exercise.trim(),
+      exercise: trimmedExercise,
       duration: Number(duration) || 0,
       calories: Number(calories) || 0,
     };
 
-    // App에서 onAddExercises는 배열을 받도록 되어 있어서 그대로 유지
-    onAddExercises([newRecord]);
+    if (isEditMode) {
+      onUpdateExercise && onUpdateExercise(record);
+    } else {
+      onAddExercises && onAddExercises([record]);
+      resetForm();
+    }
+  };
 
-    setExercise("");
-    setDuration("");
-    setCalories("");
+  const handleCancel = () => {
+    resetForm();
+    cancelEdit && cancelEdit();
   };
 
   return (
@@ -57,7 +83,8 @@ export default function ExerciseForm({ onAddExercises }) {
         <input
           type="date"
           value={date}
-          onChange={(e) => setDate(sanitizeDateInput(e.target.value))}
+          max={today}
+          onChange={(e) => setDate(e.target.value)}
           className="
             w-full rounded-full
             border border-sky-200
@@ -94,64 +121,79 @@ export default function ExerciseForm({ onAddExercises }) {
 
       {/* 시간 / 칼로리 */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-slate-600">
-            시간 (분)
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            className="
-              w-full rounded-full
-              border border-sky-200
-              bg-rose-50
-              px-4 py-2.5
-              text-sm text-slate-700
-              focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400
-            "
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-slate-600">
-            칼로리 (kcal)
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value)}
-            className="
-              w-full rounded-full
-              border border-sky-200
-              bg-rose-50
-              px-4 py-2.5
-              text-sm text-slate-700
-              focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400
-            "
-          />
-        </div>
+        <NumberField
+          label="시간 (분)"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
+        />
+        <NumberField
+          label="칼로리 (kcal)"
+          value={calories}
+          onChange={(e) => setCalories(e.target.value)}
+        />
       </div>
 
-      {/* 저장 버튼 */}
-      <button
-        type="submit"
-        className="
-          w-full mt-1
-          inline-flex items-center justify-center gap-2
-          rounded-full
-          bg-sky-500
-          text-white text-sm font-semibold
-          py-2.5
-          shadow-sm
-          hover:bg-sky-600
-          transition
-        "
-      >
-        <span className="text-base">💾</span>
-        저장
-      </button>
+      {/* 버튼 영역 */}
+      <div className="flex gap-2 mt-1">
+        <button
+          type="submit"
+          className="
+            flex-1 inline-flex items-center justify-center gap-2
+            rounded-full
+            bg-sky-500
+            text-white text-sm font-semibold
+            py-2.5
+            shadow-sm
+            hover:bg-sky-600
+            transition
+          "
+        >
+          <span className="text-base">💾</span>
+          <span>{isEditMode ? "수정" : "저장"}</span>
+        </button>
+
+        {isEditMode && (
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="
+              px-4 py-2.5
+              rounded-full
+              border border-slate-300
+              bg-white
+              text-xs font-medium text-slate-600
+              hover:bg-slate-50
+              transition
+            "
+          >
+            취소
+          </button>
+        )}
+      </div>
     </form>
+  );
+}
+
+function NumberField({ label, value, onChange }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs font-semibold text-slate-600">
+        {label}
+      </label>
+      <input
+        type="number"
+        min="0"
+        value={value}
+        onChange={onChange}
+        className="
+          w-full rounded-full
+          border border-sky-200
+          bg-rose-50
+          px-4 py-2.5
+          text-sm text-slate-700
+          focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400
+        "
+      />
+    </div>
   );
 }

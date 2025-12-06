@@ -1,5 +1,5 @@
 // src/components/MyActivity/ActivityGoalPanel.jsx
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 // 공통 숫자 변환 헬퍼
 const toNumberOrNull = (v) =>
@@ -12,32 +12,20 @@ export default function ActivityGoalPanel({ goals, latestBody, onSaveGoals }) {
   const [weightInput, setWeightInput] = useState("");
   const [muscleInput, setMuscleInput] = useState("");
 
-  // ───────────────── 현재 값 / 목표 값 정리 ─────────────────
-  const currentWeight = useMemo(
-    () => (latestBody?.weight != null ? Number(latestBody.weight) : null),
-    [latestBody]
-  );
-  const currentMuscle = useMemo(
-    () => (latestBody?.muscle != null ? Number(latestBody.muscle) : null),
-    [latestBody]
-  );
+  // ───────────────── 현재 값 / 목표 값 숫자 변환 ─────────────────
+  const currentWeight = toNumberOrNull(latestBody?.weight);
+  const currentMuscle = toNumberOrNull(latestBody?.muscle);
 
-  const goalWeight = useMemo(
-    () => (goals?.weight != null ? Number(goals.weight) : null),
-    [goals]
-  );
-  const goalMuscle = useMemo(
-    () => (goals?.muscle != null ? Number(goals.muscle) : null),
-    [goals]
-  );
+  const goalWeight = toNumberOrNull(goals?.weight);
+  const goalMuscle = toNumberOrNull(goals?.muscle);
 
   // ───────────────── 모달 열기/닫기 ─────────────────
   const handleOpen = () => {
     // 모달 열 때 입력창 초기값 세팅
     setWeightInput(
-      goalWeight ?? latestBody?.weight ?? "" // 우선순위: 목표 → 최근 기록 → 빈값
+      goalWeight ?? currentWeight ?? "" // 우선순위: 목표 → 최근 기록 → 빈값
     );
-    setMuscleInput(goalMuscle ?? latestBody?.muscle ?? "");
+    setMuscleInput(goalMuscle ?? currentMuscle ?? "");
     setOpen(true);
   };
 
@@ -111,11 +99,12 @@ export default function ActivityGoalPanel({ goals, latestBody, onSaveGoals }) {
 /* --- 목표 카드 컴포넌트 --- */
 
 function GoalCard({ label, current, goal, unit, mode }) {
-  const hasCurrent = current !== null && !isNaN(current);
-  const hasGoal = goal !== null && !isNaN(goal);
+  const hasCurrent = current !== null && !Number.isNaN(current);
+  const hasGoal = goal !== null && !Number.isNaN(goal);
 
   let subtitle = "";
   let highlightClass = "text-slate-500";
+  const icon = mode === "down" ? "📉" : "📈";
 
   if (!hasCurrent) {
     subtitle = "최근 체성분 기록이 없습니다.";
@@ -129,7 +118,7 @@ function GoalCard({ label, current, goal, unit, mode }) {
       subtitle = "목표를 달성했습니다! 🎉";
       highlightClass = "text-emerald-500";
     } else if (mode === "down") {
-      // 체중: 목표까지 감량 필요 / 과하게 빠짐
+      // 체중: 목표까지 감량 필요 / 목표보다 적게 나갈 때
       if (current > goal) {
         subtitle = `목표까지 ${abs}${unit} 감량 필요`;
         highlightClass = "text-sky-500";
@@ -148,8 +137,6 @@ function GoalCard({ label, current, goal, unit, mode }) {
       }
     }
   }
-
-  const icon = mode === "down" ? "📉" : "📈";
 
   return (
     <div className="bg-sky-50 rounded-2xl px-4 py-3 lg:px-5 lg:py-4 shadow-inner">
@@ -184,9 +171,24 @@ function GoalModal({
   onClose,
   onSave,
 }) {
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-30">
-      <div className="bg-white rounded-2xl w-full max-w-lg mx-4 p-6 shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black/30 flex items-center justify-center z-30"
+      onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="목표값 설정"
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-lg mx-4 p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-lg font-semibold text-slate-800 mb-3">
           목표값 설정
         </h3>

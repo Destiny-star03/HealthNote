@@ -1,19 +1,30 @@
 // src/components/MyActivity/ActivitySummary.jsx
 
+// 안전하게 숫자 처리하는 헬퍼
+function toSafeNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isNaN(num) ? fallback : num;
+}
+
 export default function ActivitySummary({ stats }) {
-  // stats가 undefined여도 안전하게 처리
   const {
     workouts = 0,
     avgDuration = 0,
     totalCalories = 0,
-    activeDays, // 있으면 일수 기준으로 사용
+    activeDays, 
   } = stats || {};
 
-  // 🔹 운동한 '날짜 수'가 넘어오면 우선 사용, 없으면 workouts로 대체
-  const workoutDays = typeof activeDays === "number" ? activeDays : workouts;
+  //운동한 '날짜 수'가 넘어오면 우선 사용, 없으면 workouts로 대체
+  const workoutDays =
+    typeof activeDays === "number" ? activeDays : workouts;
 
-  // 🔹 3일 이상 운동했으면 하이라이트
+  //3일 이상 운동했으면 하이라이트
   const hitWorkoutGoal = workoutDays >= 3;
+
+  //화면에 보여줄 문자열 미리 준비
+  const workoutsLabel = `${toSafeNumber(workouts)}회`;
+  const avgDurationLabel = `${toSafeNumber(avgDuration)}분`;
+  const totalCaloriesLabel = `${toSafeNumber(totalCalories).toLocaleString()}kcal`;
 
   return (
     <section className="bg-sky-50 rounded-3xl border border-sky-100 p-5 lg:p-6 shadow-sm h-full">
@@ -30,19 +41,21 @@ export default function ActivitySummary({ stats }) {
           <SummaryCard
             icon="📈"
             label="운동횟수"
-            value={`${workouts}회`}
+            value={workoutsLabel}
             highlight={hitWorkoutGoal}
             badgeText={hitWorkoutGoal ? "3일 이상 운동 달성!" : undefined}
           />
+
           <SummaryCard
             icon="⏱️"
             label="평균 시간"
-            value={`${avgDuration}분`}
+            value={avgDurationLabel}
           />
+
           <SummaryCard
             icon="🔥"
             label="총 칼로리"
-            value={`${totalCalories.toLocaleString()}kcal`}
+            value={totalCaloriesLabel}
           />
         </div>
       </div>
@@ -72,6 +85,7 @@ function SummaryCard({ icon, label, value, highlight = false, badgeText }) {
             {label}
           </span>
         </div>
+
         {highlight && badgeText && (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700 mt-0.5">
             ✅ {badgeText}

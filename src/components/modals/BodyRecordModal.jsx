@@ -18,10 +18,25 @@ export default function BodyRecordModal({
     }
   };
 
+  const handleCancelEdit = () => {
+    setEditingBody(null);
+  };
+
+  const handleEditRecord = (record) => {
+    setEditingBody(record);
+  };
+
+  const handleDeleteRecord = (id) => {
+    onDeleteBody(id);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm"
       onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="체성분 기록 관리"
     >
       <div
         className="w-full max-w-lg mx-4 bg-sky-50 rounded-3xl shadow-[0_20px_60px_rgba(15,23,42,0.35)] border border-sky-100 overflow-hidden"
@@ -46,12 +61,10 @@ export default function BodyRecordModal({
           {/* 입력 폼 카드 (위쪽) */}
           <div className="bg-white rounded-2xl border border-sky-100 px-4 py-4 shadow-sm">
             <BodyForm
-              bodyRecords={bodyRecords}
               onAddBody={onAddBody}
               onUpdateBody={onUpdateBody}
               editingBody={editingBody}
-              cancelEdit={() => setEditingBody(null)}
-              onDeleteBody={onDeleteBody}
+              cancelEdit={handleCancelEdit}
             />
           </div>
 
@@ -59,8 +72,8 @@ export default function BodyRecordModal({
           <div className="bg-white rounded-2xl border border-sky-100 px-4 py-3 shadow-sm max-h-64 overflow-y-auto">
             <BodyTable
               records={bodyRecords}
-              onDelete={onDeleteBody}
-              onEdit={setEditingBody}
+              onDelete={handleDeleteRecord}
+              onEdit={handleEditRecord}
             />
           </div>
         </div>
