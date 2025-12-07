@@ -1,4 +1,5 @@
 // src/pages/Dashboard.jsx
+import { useMemo } from "react";             // ✅ 추가
 import ActivityHeader from "../components/MyActivity/ActivityHeader";
 import ActivityChart from "../components/MyActivity/ActivityChart";
 import ActivitySummary from "../components/MyActivity/ActivitySummary";
@@ -14,10 +15,24 @@ export default function Dashboard({
   onOpenBodyModal,
   onOpenExerciseModal,
 }) {
-  const latestBody =
-    bodyRecords && bodyRecords.length > 0
-      ? bodyRecords[bodyRecords.length - 1]
-      : null;
+  //날짜 기준으로 "오늘과 가장 가까운 기록" 구하기
+  const latestBody = useMemo(() => {
+    if (!Array.isArray(bodyRecords) || bodyRecords.length === 0) return null;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    // 오늘 또는 과거 날짜만 후보로
+    const candidates = bodyRecords.filter(
+      (r) => r.date && r.date <= todayStr
+    );
+
+    const targetList = candidates.length > 0 ? candidates : bodyRecords;
+
+    // 날짜 내림차순 정렬 후 첫 번째 = 가장 최근 날짜
+    return [...targetList].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    )[0];
+  }, [bodyRecords]);
 
   /*1. 최근 7일 운동만 필터링 */
   const today = new Date();
@@ -45,7 +60,7 @@ export default function Dashboard({
   );
   const avgDuration =
     totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
-  const activeDays = new Set(recentExercises.map(e => e.date)).size;
+  const activeDays = new Set(recentExercises.map((e) => e.date)).size;
   const stats = {
     workouts: totalWorkouts,
     totalCalories,
@@ -94,7 +109,6 @@ export default function Dashboard({
           latestBody={latestBody}
           onSaveGoals={onSaveGoals}
         />
-        {/* ✅ 여기서 보여주는 값만 'recentExercises' 기준 */}
         <ActivitySummary stats={stats} />
       </aside>
     </section>

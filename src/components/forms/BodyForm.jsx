@@ -5,7 +5,7 @@ export default function BodyForm({
   onAddBody,
   onUpdateBody,
   editingBody,
-  cancelEdit,   // 편집 취소 콜백
+  cancelEdit,   
 }) {
   const today = new Date().toISOString().slice(0, 10);
 
