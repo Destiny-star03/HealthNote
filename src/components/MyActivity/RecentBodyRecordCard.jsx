@@ -1,4 +1,4 @@
-// src/components/MyActivity/ActivityHeader.jsx
+// src/components/MyActivity/RecentBodyRecordCard.jsx
 
 // 공통 숫자 + 단위 포맷 함수
 function formatStat(value, unit = "", digits = 1) {

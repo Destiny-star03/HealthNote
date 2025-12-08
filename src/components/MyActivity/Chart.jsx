@@ -1,4 +1,4 @@
-// src/components/MyActivity/ActivityChart.jsx
+// src/components/MyActivity/Chart.jsx
 import {
   LineChart,
   Line,

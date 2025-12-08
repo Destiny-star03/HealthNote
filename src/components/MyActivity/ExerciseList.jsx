@@ -1,4 +1,4 @@
-// src/components/MyActivity/ActivityExerciseList.jsx
+// src/components/MyActivity/ExerciseList.jsx
 import { useMemo, useState, useEffect, useRef } from "react";
 
 export default function ActivityExerciseList({
