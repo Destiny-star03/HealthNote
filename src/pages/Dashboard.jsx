@@ -1,9 +1,9 @@
 // src/pages/Dashboard.jsx
 import { useMemo } from "react";             // ✅ 추가
-import ActivityHeader from "../components/MyActivity/ActivityHeader";
-import ActivityChart from "../components/MyActivity/ActivityChart";
+import RecentBodyRecordCard from "../components/MyActivity/RecentBodyRecordCard";
+import Chart from "../components/MyActivity/Chart";
 import ActivitySummary from "../components/MyActivity/ActivitySummary";
-import ActivityExerciseList from "../components/MyActivity/ActivityExerciseList";
+import ExerciseList from "../components/MyActivity/ExerciseList";
 import ActivityGoalPanel from "../components/MyActivity/ActivityGoalPanel";
 
 export default function Dashboard({
@@ -80,16 +80,16 @@ export default function Dashboard({
       {/*왼쪽 메인 영역 (카드들이 위에서 아래로) */}
       <div className="flex-1 space-y-6">
         {/* 1. 최근 체성분 */}
-        <ActivityHeader
+        <RecentBodyRecordCard
           latestBody={latestBody}
           onOpenBodyModal={onOpenBodyModal}
         />
 
         {/* 2. 체성분 변화 추이 그래프 */}
-        <ActivityChart bodyRecords={bodyRecords} profile={profile} />
+        <Chart bodyRecords={bodyRecords} profile={profile} />
 
         {/* 3. 최근 운동기록 리스트 (여기는 전체 운동 기록 사용) */}
-        <ActivityExerciseList
+        <ExerciseList
           exercises={exerciseRecords}
           onOpenRecordModal={onOpenExerciseModal}
         />
